@@ -496,7 +496,7 @@
 
         function handleLogout() {
             sessionStorage.removeItem('currentUser');
-            window.location.href = "../../loginform/login.html";
+            window.location.href = "../../index.html";
         }
 
         function showSuggestions(val) {
@@ -540,7 +540,7 @@
 
         function initPage() {
             const user = JSON.parse(sessionStorage.getItem('currentUser'));
-            if (!user || user.role !== 'dao-tao') { window.location.href = "../../loginform/login.html"; return; }
+            if (!user || user.role !== 'dao-tao') { window.location.href = "../../index.html"; return; }
             
             document.getElementById('admin-name').innerText = user.hoTen;
             const avatarDisplay = document.getElementById('admin-avatar-display');

@@ -365,7 +365,7 @@
 
             if (!currentUser || currentUser.role !== 'dao-tao') {
                 alert("Phiên đăng nhập hết hạn hoặc bạn không có quyền!");
-                window.location.href = "../../loginform/login.html";
+                window.location.href = "../../index.html";
                 return;
             }
 
@@ -384,7 +384,7 @@
         // 5. Hàm đăng xuất (Cập nhật)
         function handleLogout() {
             sessionStorage.removeItem('currentUser');
-            window.location.href = "../../loginform/login.html";
+            window.location.href = "../../index.html";
         }
     </script>
 </body>

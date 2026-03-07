@@ -497,7 +497,7 @@
         // --- 6. Heartbeat & Trạng thái ---
         const redirectToLogin = () => {
             sessionStorage.removeItem('currentUser');
-            window.location.href = "../../loginform/login.html"; 
+            window.location.href = "../../index.html"; 
         };
 
         const showLockNotification = (reason) => {
@@ -535,7 +535,7 @@
                 localStorage.setItem('user_heartbeats', JSON.stringify(heartbeats));
             }
             sessionStorage.removeItem('currentUser');
-            window.location.href = "../../loginform/login.html";
+            window.location.href = "../../index.html";
         }
 
         document.addEventListener('DOMContentLoaded', () => {

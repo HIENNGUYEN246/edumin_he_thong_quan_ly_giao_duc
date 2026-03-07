@@ -302,7 +302,7 @@
                     title: 'Lỗi',
                     text: 'Phiên đăng nhập hết hạn hoặc bạn không có quyền!',
                 }).then(() => {
-                    window.location.href = "../../loginform/login.html"; 
+                    window.location.href = "../../index.html"; 
                 });
                 return; 
             }
@@ -472,7 +472,7 @@
 
         function handleLogout() {
             sessionStorage.removeItem('currentUser');
-            window.location.href = "../../loginform/login.html";
+            window.location.href = "../../index.html";
         }
 
         function updateDeptOptions() {
