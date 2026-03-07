@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edumin - Quản lý Lớp học</title>
+    <script src="../../tailwind.js"></script> 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Poppins', sans-serif; background-color: #f3f4f9; }
+        
+        /* Hiệu ứng mượt cho Submenu */
+        .submenu-container {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-in-out;
+        }
+        .submenu-container.open {
+            max-height: 200px;
+        }
+        .menu-arrow {
+            transition: transform 0.3s ease;
+        }
+        .rotate-180 {
+            transform: rotate(180deg);
+        }
+        .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); }
+        #confirmContent { transition: all 0.3s ease; }
+
+        /* Style cho thông báo lỗi */
+        .error-border { border-color: #ef4444 !important; border-width: 2px !important; }
+        .error-text { color: #ef4444; font-size: 0.75rem; margin-top: 0.25rem; display: none; }
+
+        /* Dropdown Avatar (Đồng bộ từ pdt.html) */
+        #user-dropdown {
+            display: none;
+        }
+        #user-dropdown.show {
+            display: block;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen" onload="initPage()">
+
+    <header class="w-full bg-white shadow-sm z-50 flex items-center justify-between px-6 py-4 border-b border-gray-200">
+        <div class="flex items-center gap-3 w-64">
+            <div class="bg-indigo-600 p-2 rounded-lg">
+                <i class="fas fa-graduation-cap text-white text-xl"></i>
+            </div>
+            <span class="text-2xl font-bold text-indigo-900 uppercase">EDUMIN</span>
+        </div>
+
+        <div class="flex items-center gap-6">
+            <div class="relative">
+                <i class="far fa-bell text-gray-600 text-xl"></i>
+                <span class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center">15</span>
+            </div>
+            <div class="relative">
+                <div class="flex items-center gap-3 border-l pl-6 border-gray-300 cursor-pointer" onclick="toggleUserDropdown(event)">
+                    <div class="text-right hidden sm:block">
+                        <p id="admin-name" class="text-sm font-bold text-gray-800">Admin Đào Tạo</p>
+                        <p class="text-xs text-gray-500">Đã đăng nhập</p>
+                    </div>
+                    <img id="admin-avatar-display" src="" class="w-10 h-10 rounded-full shadow-sm">
+                </div>
+
+                <div id="user-dropdown" class="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-xl py-2 z-[100]">
+                    <button onclick="openChangePasswordModal()" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 transition">
+                        <i class="fas fa-key mr-2"></i> Đổi mật khẩu
+                    </button>
+                    <button onclick="handleLogout()" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition">
+                        <i class="fas fa-sign-out-alt mr-2"></i> Đăng xuất
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="flex flex-1 overflow-hidden">
+        <aside class="w-64 bg-white shadow-lg hidden md:block overflow-y-auto border-r border-gray-100">
+            <nav class="mt-8 px-4">
+                <p class="text-xs font-semibold text-gray-400 uppercase px-2 mb-2">Main Menu</p>
+                <ul class="space-y-1">
+                    <li>
+                        <a href="pdt.html" class="flex items-center gap-3 p-3 text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg transition">
+                            <i class="fas fa-th-large w-5 text-center"></i> 
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+
+                    <li>
+                        <button onclick="toggleSubmenu('submenu-gv', 'arrow-gv')" class="w-full flex items-center justify-between p-3 text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg transition">
+                            <div class="flex items-center gap-3">
+                                <i class="fas fa-user-tie w-5 text-center"></i> 
+                                <span>Giảng viên</span>
+                            </div>
+                            <i id="arrow-gv" class="fas fa-chevron-down text-[10px] menu-arrow"></i>
+                        </button>
+                        <div id="submenu-gv" class="submenu-container">
+                            <ul class="pl-2 mt-1 space-y-1 border-l-2 border-indigo-100 ml-6">
+                                <li><a href="quanlygv.html" class="block p-2 text-sm text-gray-500 hover:text-indigo-600 transition">Danh sách giảng viên</a></li>
+                                <li><a href="taikhoangv.html" class="block p-2 text-sm text-gray-500 hover:text-indigo-600 transition">Tài khoản giảng viên</a></li>
+                            </ul>
+                        </div>
+                    </li>
+
+                    <li>
+                        <button onclick="toggleSubmenu('submenu-sv', 'arrow-sv')" class="w-full flex items-center justify-between p-3 text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg transition">
+                            <div class="flex items-center gap-3">
+                                <i class="fas fa-user-graduate w-5 text-center"></i> 
+                                <span>Sinh viên</span>
+                            </div>
+                            <i id="arrow-sv" class="fas fa-chevron-down text-[10px] menu-arrow"></i>
+                        </button>
+                        <div id="submenu-sv" class="submenu-container">
+                            <ul class="pl-2 mt-1 space-y-1 border-l-2 border-indigo-100 ml-6">
+                                <li><a href="quanlysv.html" class="block p-2 text-sm text-gray-500 hover:text-indigo-600 transition">Danh sách sinh viên</a></li>
+                                <li><a href="taikhoansv.html" class="block p-2 text-sm text-gray-500 hover:text-indigo-600 transition">Tài khoản sinh viên</a></li>
+                            </ul>
+                        </div>
+                    </li>
+
+                    <li>
+                        <a href="quanlylop.html" class="flex items-center gap-3 p-3 bg-indigo-50 text-indigo-600 rounded-lg font-bold transition">
+                            <i class="fas fa-school w-5 text-center"></i> 
+                            <span>Lớp</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="quanlykhoa.html" class="flex items-center gap-3 p-3 text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg transition">
+                            <i class="fa-solid fa-graduation-cap w-5 text-center"></i> 
+                            <span>Khoa</span>
+                        </a>
+                    </li>
+                    <li>
+                        <button onclick="toggleSubmenu('submenu-hp', 'arrow-hp')" class="w-full flex items-center justify-between p-3 text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg transition-all">
+                            <div class="flex items-center gap-3">
+                                <i class="fa-solid fa-book-open w-5 text-center"></i> 
+                                <span>Học phần</span>
+                            </div>
+                            <i id="arrow-hp" class="fas fa-chevron-down text-[10px] menu-arrow"></i>
+                        </button>
+                        <div id="submenu-hp" class="submenu-container">
+                            <ul class="pl-2 mt-1 space-y-1 border-l-2 border-indigo-100 ml-6">
+                                <li><a href="quanlyhocphan.html" class="block p-2 text-sm text-gray-500 hover:text-indigo-600 transition">Danh sách học phần</a></li>
+                                <li><a href="dangkyhocphan.html" class="block p-2 text-sm text-gray-500 hover:text-indigo-600 transition">Đăng ký học phần</a></li>
+                            </ul>
+                        </div>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="flex-1 p-8 overflow-y-auto">
+            <div class="mb-6 flex justify-between items-end">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-800">Danh sách lớp học</h2>
+                    <p class="text-sm text-gray-500">Quản lý thông tin lớp học</p>
+                </div>
+                <button onclick="openClassModal()" class="bg-indigo-600 text-white px-5 py-2.5 rounded-xl hover:bg-indigo-700 shadow-lg flex items-center gap-2 transition-all transform hover:scale-105">
+                    <i class="fas fa-plus"></i> Thêm lớp mới
+                </button>
+            </div>
+
+            <div class="mb-6 bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-wrap gap-3">
+                <div class="relative flex-1 min-w-[200px]">
+                    <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                    <input type="text" id="searchClass" oninput="renderClasses()" placeholder="Tìm tên lớp hoặc mã lớp..." class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl outline-none text-sm focus:border-indigo-500">
+                </div>
+                <select id="filterDept" onchange="renderClasses()" class="px-4 py-2 border border-gray-200 rounded-xl text-sm outline-none cursor-pointer focus:border-indigo-500">
+                    <option value="">Tất cả chuyên ngành</option>
+                </select>
+                <select id="sortOrder" onchange="renderClasses()" class="px-4 py-2 bg-indigo-50 text-indigo-700 font-semibold rounded-xl text-sm outline-none border-none cursor-pointer">
+                    <option value="name-asc">Tên (A-Z)</option>
+                    <option value="name-desc">Tên (Z-A)</option>
+                </select>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-gray-50 text-gray-400 text-[11px] uppercase tracking-wider">
+                        <tr>
+                            <th class="px-6 py-4 font-semibold">Mã Lớp</th>
+                            <th class="px-6 py-4 font-semibold">Tên Lớp</th>
+                            <th class="px-6 py-4 font-semibold">Chuyên Ngành</th>
+                            <th class="px-6 py-4 text-center font-semibold">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="classTableBody" class="divide-y divide-gray-50 text-sm text-gray-700">
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <div id="classModal" class="modal items-center justify-center">
+        <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md mx-4 transform transition-all">
+            <h3 id="modalTitle" class="text-xl font-bold mb-6 text-gray-800 border-b pb-4">Thêm Lớp Học</h3>
+            <form id="classForm" class="space-y-4" novalidate>
+                <input type="hidden" id="editClassId">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Mã Lớp</label>
+                    <input type="text" id="classId" placeholder="VD: CNTT-K21" class="w-full p-2.5 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500">
+                    <p id="error-classId" class="error-text">Mã lớp không được để trống!</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Tên Lớp</label>
+                    <input type="text" id="className" placeholder="VD: K21 Công Nghệ Thông Tin 1" class="w-full p-2.5 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500">
+                    <p id="error-className" class="error-text">Tên lớp không được để trống!</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Chuyên Ngành</label>
+                    <select id="classDept" class="w-full p-2.5 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500">
+                    </select>
+                    <p id="error-classDept" class="error-text">Vui lòng chọn chuyên ngành!</p>
+                </div>
+                <div class="flex justify-end gap-3 pt-6">
+                    <button type="button" onclick="closeClassModal()" class="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition">Hủy</button>
+                    <button type="submit" class="px-6 py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 shadow-md transition">Lưu dữ liệu</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="confirmModal" class="modal items-center justify-center">
+        <div id="confirmContent" class="bg-white rounded-2xl p-8 max-w-sm w-full mx-4 shadow-2xl transform scale-95 opacity-0">
+            <div class="text-center">
+                <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4">
+                    <i class="fas fa-exclamation-triangle text-red-600 text-2xl"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 mb-2">Xác nhận xóa?</h3>
+                <p class="text-sm text-gray-500 mb-6">Dữ liệu lớp học sẽ bị xóa vĩnh viễn khỏi hệ thống. Bạn có chắc chắn không?</p>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="closeConfirmModal()" class="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition">Hủy</button>
+                <button id="btnConfirmDelete" class="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 transition">Xóa ngay</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="changePasswordModal" class="fixed inset-0 bg-black bg-opacity-50 z-[200] hidden flex items-center justify-center">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+            <div class="bg-indigo-600 p-4 text-white flex justify-between items-center">
+                <h3 class="font-bold">Đổi mật khẩu</h3>
+                <button onclick="closeChangePasswordModal()" class="text-white hover:text-gray-200">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Mật khẩu cũ</label>
+                    <input type="password" id="oldPassword" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="Nhập mật khẩu cũ">
+                    <p id="error-oldPassword" class="text-red-500 text-xs mt-1 hidden"></p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Mật khẩu mới</label>
+                    <input type="password" id="newPassword" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="Tối thiểu 6 ký tự">
+                    <p id="error-newPassword" class="text-red-500 text-xs mt-1 hidden"></p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Xác nhận mật khẩu</label>
+                    <input type="password" id="confirmPassword" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="Nhập lại mật khẩu mới">
+                    <p id="error-confirmPassword" class="text-red-500 text-xs mt-1 hidden"></p>
+                </div>
+                <div class="flex gap-3 pt-2">
+                    <button onclick="closeChangePasswordModal()" class="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium">Hủy</button>
+                    <button onclick="submitChangePassword()" class="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium">Cập nhật</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- LOGIC HEADER & AVATAR ---
+        function toggleUserDropdown(event) {
+            event.stopPropagation();
+            document.getElementById('user-dropdown').classList.toggle('show');
+        }
+
+        window.onclick = function(event) {
+            if (!event.target.closest('.relative')) {
+                const dropdown = document.getElementById('user-dropdown');
+                if(dropdown) dropdown.classList.remove('show');
+            }
+        }
+
+        function openChangePasswordModal() {
+            document.getElementById('changePasswordModal').classList.remove('hidden');
+            document.getElementById('user-dropdown').classList.remove('show');
+        }
+
+        function closeChangePasswordModal() {
+            document.getElementById('changePasswordModal').classList.add('hidden');
+            resetPasswordForm();
+        }
+
+        function resetPasswordForm() {
+            ['oldPassword', 'newPassword', 'confirmPassword'].forEach(id => {
+                const input = document.getElementById(id);
+                input.value = '';
+                input.classList.remove('border-red-500');
+                document.getElementById(`error-${id}`).classList.add('hidden');
+            });
+        }
+
+        function showPasswordError(id, message) {
+            const input = document.getElementById(id);
+            const errorText = document.getElementById(`error-${id}`);
+            input.classList.add('border-red-500');
+            errorText.innerText = message;
+            errorText.classList.remove('hidden');
+        }
+
+        function submitChangePassword() {
+            resetPasswordForm();
+            const oldPass = document.getElementById('oldPassword').value;
+            const newPass = document.getElementById('newPassword').value;
+            const confirmPass = document.getElementById('confirmPassword').value;
+            const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+            
+            let hasError = false;
+            if (!oldPass) { showPasswordError('oldPassword', 'Vui lòng nhập mật khẩu cũ'); hasError = true; }
+            if (!newPass) { showPasswordError('newPassword', 'Vui lòng nhập mật khẩu mới'); hasError = true; }
+            if (!confirmPass) { showPasswordError('confirmPassword', 'Vui lòng xác nhận mật khẩu'); hasError = true; }
+            if (hasError) return;
+
+            if (oldPass !== currentUser.password) {
+                showPasswordError('oldPassword', 'Mật khẩu cũ không đúng');
+                hasError = true;
+            }
+            if (newPass.length < 6) {
+                showPasswordError('newPassword', 'Mật khẩu phải ít nhất 6 ký tự trở lên');
+                hasError = true;
+            }
+            if (newPass !== confirmPass) {
+                showPasswordError('confirmPassword', 'Mật khẩu xác nhận không giống mật khẩu mới');
+                hasError = true;
+            }
+
+            if (hasError) return;
+
+            currentUser.password = newPass;
+            sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+            alert("Đổi mật khẩu thành công!");
+            closeChangePasswordModal();
+        }
+
+        function handleLogout() {
+            sessionStorage.removeItem('currentUser');
+            window.location.href = "../../loginform/login.html";
+        }
+
+        // --- LOGIC SIDEBAR & QUẢN LÝ LỚP ---
+        function toggleSubmenu(menuId, arrowId) {
+            const menu = document.getElementById(menuId);
+            const arrow = document.getElementById(arrowId);
+            menu.classList.toggle('open');
+            arrow.classList.toggle('rotate-180');
+        }
+
+        function renderDepartmentOptions() {
+            const departments = JSON.parse(localStorage.getItem('departmentsData')) || [];
+            const filterDept = document.getElementById('filterDept');
+            const classDeptSelect = document.getElementById('classDept');
+
+            filterDept.innerHTML = '<option value="">Tất cả chuyên ngành</option>';
+            classDeptSelect.innerHTML = '<option value="" disabled selected>Chọn chuyên ngành</option>';
+
+            departments.forEach(dept => {
+                const opt = `<option value="${dept.name}">${dept.name}</option>`;
+                filterDept.innerHTML += opt;
+                classDeptSelect.innerHTML += opt;
+            });
+        }
+
+        function initPage() {
+            renderDepartmentOptions();
+            renderClasses();
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+
+            if (!currentUser || currentUser.role !== 'dao-tao') {
+                alert("Phiên đăng nhập hết hạn hoặc bạn không có quyền!");
+                window.location.href = "../../loginform/login.html";
+                return;
+            }
+
+            const nameDisplay = document.getElementById('admin-name');
+            if (nameDisplay && currentUser.hoTen) {
+                nameDisplay.innerText = currentUser.hoTen;
+            }
+
+            const avatarDisplay = document.getElementById('admin-avatar-display');
+            if (avatarDisplay && currentUser.hoTen) {
+                const encodedName = encodeURIComponent(currentUser.hoTen);
+                avatarDisplay.src = `https://ui-avatars.com/api/?name=${encodedName}&background=6366f1&color=fff`;
+            }
+        });
+
+        function renderClasses() {
+            const classes = JSON.parse(localStorage.getItem('classesData')) || [];
+            const search = document.getElementById('searchClass').value.toLowerCase();
+            const dept = document.getElementById('filterDept').value;
+            const sort = document.getElementById('sortOrder').value;
+
+            let filtered = classes.filter(c => 
+                (c.name.toLowerCase().includes(search) || c.id.toLowerCase().includes(search)) &&
+                (!dept || c.department === dept)
+            );
+
+            filtered.sort((a, b) => sort === 'name-asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name));
+
+            const tbody = document.getElementById('classTableBody');
+            tbody.innerHTML = filtered.map(c => `
+                <tr class="hover:bg-indigo-50/30 transition-colors border-b border-gray-50 last:border-none">
+                    <td class="px-6 py-4 font-bold text-indigo-600">${c.id}</td>
+                    <td class="px-6 py-4 font-medium text-gray-800">${c.name}</td>
+                    <td class="px-6 py-4 text-gray-500">${c.department}</td>
+                    <td class="px-6 py-4 text-center">
+                        <div class="flex justify-center gap-2">
+                            <button onclick="openClassModal('${c.id}')" class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-all shadow-sm">
+                                <i class="fas fa-edit text-xs"></i>
+                            </button>
+                            <button onclick="confirmDeleteClass('${c.id}')" class="w-8 h-8 rounded-lg bg-red-50 text-red-500 hover:bg-red-600 hover:text-white transition-all shadow-sm">
+                                <i class="fas fa-trash-alt text-xs"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function clearErrors() {
+            const inputs = ['classId', 'className', 'classDept'];
+            inputs.forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.classList.remove('error-border');
+                const err = document.getElementById(`error-${id}`);
+                if(err) {
+                    err.style.display = 'none';
+                    err.innerText = "";
+                }
+            });
+        }
+
+        function openClassModal(id = null) {
+            clearErrors(); 
+            renderDepartmentOptions();
+            document.getElementById('classModal').style.display = 'flex';
+            const title = document.getElementById('modalTitle');
+            const classIdInput = document.getElementById('classId');
+            
+            if (id) {
+                const c = JSON.parse(localStorage.getItem('classesData')).find(x => x.id === id);
+                title.innerText = "Chỉnh sửa Lớp học";
+                document.getElementById('editClassId').value = c.id;
+                classIdInput.value = c.id;
+                document.getElementById('className').value = c.name;
+                document.getElementById('classDept').value = c.department;
+            } else {
+                title.innerText = "Thêm Lớp học mới";
+                document.getElementById('classForm').reset();
+                document.getElementById('editClassId').value = "";
+            }
+        }
+
+        function closeClassModal() { document.getElementById('classModal').style.display = 'none'; }
+
+        document.getElementById('classForm').onsubmit = function(e) {
+            e.preventDefault();
+            clearErrors();
+
+            let isValid = true;
+            const classId = document.getElementById('classId').value.trim();
+            const className = document.getElementById('className').value.trim();
+            const classDept = document.getElementById('classDept').value;
+            const editId = document.getElementById('editClassId').value;
+            let classes = JSON.parse(localStorage.getItem('classesData')) || [];
+
+            // Kiểm tra trống
+            if (!classId) {
+                document.getElementById('classId').classList.add('error-border');
+                document.getElementById('error-classId').innerText = "Mã lớp không được để trống!";
+                document.getElementById('error-classId').style.display = 'block';
+                isValid = false;
+            }
+            if (!className) {
+                document.getElementById('className').classList.add('error-border');
+                document.getElementById('error-className').innerText = "Tên lớp không được để trống!";
+                document.getElementById('error-className').style.display = 'block';
+                isValid = false;
+            }
+            if (!classDept) {
+                document.getElementById('classDept').classList.add('error-border');
+                document.getElementById('error-classDept').innerText = "Vui lòng chọn chuyên ngành!";
+                document.getElementById('error-classDept').style.display = 'block';
+                isValid = false;
+            }
+
+            if (!isValid) return;
+
+            // Kiểm tra trùng lặp mã lớp và tên lớp
+            // Nếu đang sửa (editId tồn tại), loại trừ lớp hiện tại ra khỏi danh sách kiểm tra trùng
+            const otherClasses = editId ? classes.filter(x => x.id !== editId) : classes;
+
+            if (otherClasses.some(x => x.id.toLowerCase() === classId.toLowerCase())) {
+                document.getElementById('classId').classList.add('error-border');
+                document.getElementById('error-classId').innerText = "Mã lớp này đã tồn tại trong hệ thống, cần đổi!";
+                document.getElementById('error-classId').style.display = 'block';
+                isValid = false;
+            }
+
+            if (otherClasses.some(x => x.name.toLowerCase() === className.toLowerCase())) {
+                document.getElementById('className').classList.add('error-border');
+                document.getElementById('error-className').innerText = "Tên lớp này đã tồn tại trong hệ thống, cần đổi!";
+                document.getElementById('error-className').style.display = 'block';
+                isValid = false;
+            }
+
+            if (!isValid) return;
+
+            const newData = { id: classId, name: className, department: classDept };
+
+            if (editId) {
+                const index = classes.findIndex(x => x.id === editId);
+                classes[index] = newData;
+            } else {
+                classes.push(newData);
+            }
+
+            localStorage.setItem('classesData', JSON.stringify(classes));
+            renderClasses();
+            closeClassModal();
+        };
+
+        let idToDelete = null;
+        function confirmDeleteClass(id) {
+            idToDelete = id;
+            document.getElementById('confirmModal').style.display = 'flex';
+            setTimeout(() => {
+                document.getElementById('confirmContent').classList.replace('scale-95', 'scale-100');
+                document.getElementById('confirmContent').classList.replace('opacity-0', 'opacity-100');
+            }, 10);
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirmContent').classList.replace('scale-100', 'scale-95');
+            document.getElementById('confirmContent').classList.replace('opacity-100', 'opacity-0');
+            setTimeout(() => { 
+                document.getElementById('confirmModal').style.display = 'none'; 
+                idToDelete = null; 
+            }, 200);
+        }
+
+        document.getElementById('btnConfirmDelete').onclick = () => {
+            let classes = JSON.parse(localStorage.getItem('classesData'));
+            localStorage.setItem('classesData', JSON.stringify(classes.filter(x => x.id !== idToDelete)));
+            renderClasses();
+            closeConfirmModal();
+        };
+    </script>
+</body>
+</html>

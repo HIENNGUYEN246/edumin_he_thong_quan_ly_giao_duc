@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Form - Education</title>
+    <script src="../../tailwind.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
+</head>
+<body class="relative flex items-center justify-center h-screen overflow-hidden">   
+    <div id="toast-container" class="fixed top-5 right-5 z-[9999] flex flex-col gap-3"></div>
+    <div class="absolute inset-0 z-0">
+        <img src="assets/anhnentruong.jpg" alt="Background" class="w-full h-full object-cover blur-sm scale-105 brightness-90">
+    </div>
+    <div class="relative z-10 max-w-[960px] bg-white/40 border border-white/30 grid grid-cols-2 items-center gap-16 p-8 rounded-3xl shadow-2xl backdrop-blur-xl">
+        
+        <div class="relative flex flex-shrink-0">
+            <img src="assets/background.svg" alt="" class="block w-[380px] h-[580px] object-cover rounded-2xl shadow-lg"/>
+            <div class="absolute inset-0 flex items-center justify-center">
+                <img src="assets/logodaihoc.svg" alt="" class="w-2/3"/>
+            </div>
+        </div>
+
+        <div class="max-w-80 grid gap-6">
+            <div>
+                <h1 class="text-5xl font-bold text-slate-800">Login</h1>
+            </div>
+            
+            <form action="" class="space-y-5" onsubmit="event.preventDefault(); handleLogin();">
+                <div class="relative flex items-center">
+                    <div class="absolute left-1 w-9 h-9 bg-indigo-500 rounded-full flex items-center justify-center text-white shadow-md z-10">
+                        <i class="fa-solid fa-envelope-open text-[10px]"></i>
+                    </div>
+                    <input id="email" type="text" placeholder="Email của bạn" class="w-80 bg-white/90 border border-slate-200 py-2.5 pl-12 pr-4 rounded-full focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 text-slate-800 shadow-sm"/>
+                </div>
+                
+                <div class="relative flex items-center w-80">
+                    <div class="absolute left-1 w-9 h-9 bg-indigo-500 rounded-full flex items-center justify-center text-white shadow-md z-10">
+                        <i class="fa-solid fa-lock text-[10px]"></i>
+                    </div>
+
+                    <input id="password" type="password" placeholder="Mật khẩu của bạn" 
+                        class="w-full bg-white/90 border border-slate-200 py-2.5 pl-12 pr-12 rounded-full focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 text-slate-800 shadow-sm"/>
+                    
+                    <button type="button" onclick="togglePassword()"
+                        class="absolute right-2 w-9 h-9 flex items-center justify-center bg-transparent text-slate-500 hover:text-indigo-600 transition-all active:scale-90">
+                        <i id="eye-icon" class="fa-solid fa-eye text-[14px]"></i>
+                    </button>
+                </div>
+                
+                <button type="button" onclick="handleLogin()" class="bg-gradient-to-r from-indigo-600 to-blue-500 hover:from-indigo-700 hover:to-blue-600 w-80 font-bold text-white rounded-full py-3.5 shadow-xl transition-all transform hover:-translate-y-0.5 mt-2">
+                    Đăng nhập
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // 1. Khởi tạo dữ liệu Admin & Sinh viên mẫu
+        const initAccounts = () => {
+            if (!localStorage.getItem('users')) {
+                const initialUsers = [
+                    { email: 'admin1@edu.vn', pass: '123456', role: 'dao-tao', hoTen: 'Nguyễn Thế Hiển', url: '/layoutpage/pdtpage/pdt.html' },
+                    { email: 'admin2@edu.vn', pass: 'admin888', role: 'dao-tao', hoTen: 'Quân', url: '/layoutpage/pdtpage/pdt.html' }
+                ];
+                localStorage.setItem('users', JSON.stringify(initialUsers));
+            }
+            
+            if (!localStorage.getItem('studentsData')) {
+                const initialStudents = [
+                    { id: 101, email: 'vanhoc123@student.edu.vn', password: '123', hoTen: 'Lê Văn Học', status: 'Active', education: 'Đại học' },
+                    { id: 102, email: 'thithu123@edu.vn', password: '123', hoTen: 'Trần Thị Thu', status: 'Locked', education: 'Đại học' }
+                ];
+                localStorage.setItem('studentsData', JSON.stringify(initialStudents));
+            }
+
+            if (!localStorage.getItem('teachersData')) {
+                const initialTeachers = [
+                    { id: 201, email: 'gv1@edu.vn', password: '123', hoTen: 'Giảng viên A', status: 'Active', department: 'CNTT' }
+                ];
+                localStorage.setItem('teachersData', JSON.stringify(initialTeachers));
+            }
+        };
+        initAccounts();
+
+        // 2. Hàm hiển thị thông báo (Toast)
+        function showToast(message, type = 'error') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            const bgColor = type === 'success' ? 'bg-emerald-500' : 'bg-red-500';
+            const icon = type === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation';
+
+            toast.className = `${bgColor} text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 transform transition-all duration-300 translate-x-full opacity-0`;
+            toast.innerHTML = `
+                <i class="fa-solid ${icon} text-lg"></i>
+                <span class="font-medium">${message}</span>
+            `;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('translate-x-full', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', '-translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // 3. Hàm xử lý đăng nhập (Đã sửa đổi để tự động nhận diện Role)
+        // 3. Hàm xử lý đăng nhập (Đã sửa lỗi tham số và lấy giá trị input)
+        function handleLogin() {
+            // Lấy giá trị từ ô input
+            const emailInput = document.getElementById('email').value.trim();
+            const passwordInput = document.getElementById('password').value.trim();
+
+            if (!emailInput || !passwordInput) {
+                showToast("Vui lòng nhập đầy đủ email và mật khẩu!");
+                return;
+            }
+
+            // --- 1. Kiểm tra Phòng Đào Tạo (Admin) ---
+            // Sử dụng key 'users' bạn đã init ở trên hoặc 'pdtData'
+            const pdtList = JSON.parse(localStorage.getItem('users')) || [];
+            const pdtAccount = pdtList.find(u => u.email === emailInput && u.pass === passwordInput);
+            
+            if (pdtAccount) {
+                sessionStorage.setItem('currentUser', JSON.stringify(pdtAccount));
+                showToast("Đăng nhập Admin thành công!", "success");
+                setTimeout(() => window.location.href = pdtAccount.url, 1000);
+                return;
+            }
+
+            // --- 2. Kiểm tra Giáo viên ---
+            const gvList = JSON.parse(localStorage.getItem('teachersData')) || [];
+            const gvAccount = gvList.find(u => u.email === emailInput && u.password === passwordInput);
+            
+            if (gvAccount) {
+                if (gvAccount.status === 'Locked') {
+                    showToast("Tài khoản giáo viên này đã bị khóa!");
+                    return;
+                }
+                gvAccount.role = 'giao-vien'; 
+                sessionStorage.setItem('currentUser', JSON.stringify(gvAccount));
+                showToast("Đăng nhập Giáo viên thành công!", "success");
+                setTimeout(() => window.location.href = "/layoutpage/gvpage/gv.html", 1000);
+                return;
+            }
+
+            // --- 3. Kiểm tra Sinh viên ---
+            const svList = JSON.parse(localStorage.getItem('studentsData')) || [];
+            const svAccount = svList.find(u => u.email === emailInput && u.password === passwordInput);
+            
+            if (svAccount) {
+                if (svAccount.status === 'Locked') {
+                    showToast("Tài khoản sinh viên đã bị khóa!");
+                    return;
+                }
+                svAccount.role = 'sinh-vien';
+                sessionStorage.setItem('currentUser', JSON.stringify(svAccount));
+                showToast("Đăng nhập Sinh viên thành công!", "success");
+                setTimeout(() => window.location.href = "/layoutpage/svpage/sv.html", 1000);
+                return;
+            }
+
+            // Nếu không khớp bất kỳ kho dữ liệu nào
+            showToast("Email hoặc mật khẩu không chính xác!");
+        }
+
+        // 4. Hàm ẩn/hiện mật khẩu
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const eyeIcon = document.getElementById('eye-icon');
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                eyeIcon.classList.replace('fa-eye', 'fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                eyeIcon.classList.replace('fa-eye-slash', 'fa-eye');
+            }
+        }
+    </script>
+</body>
+</html>

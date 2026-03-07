@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thời khóa biểu sinh viên - Edumin</title>
+    <script src="../../tailwind.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Poppins', sans-serif; background-color: #f3f4f9; }
+        
+        .submenu-container { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-in-out; }
+        .submenu-container.open { max-height: 300px; }
+        .menu-arrow { transition: transform 0.3s ease; }
+        .rotate-180 { transform: rotate(180deg); }
+        #user-dropdown { display: none; }
+        #user-dropdown.show { display: block; }
+
+        .tkb-table { width: 100%; border-collapse: collapse; background: white; table-layout: fixed; }
+        .tkb-table th, .tkb-table td { border: 1px solid #e2e8f0; height: 180px; vertical-align: top; padding: 8px; position: relative; }
+        .tkb-table th { height: auto; background-color: #fff; color: #0284c7; padding: 15px 5px; font-weight: 700; }
+        .tkb-table .ca-hoc-col { width: 80px; background-color: #fffbeb; color: #1e293b; font-weight: 700; vertical-align: middle; text-align: center; height: auto !important; }
+        
+        .tkb-cell { background-image: radial-gradient(#e5e7eb 1px, transparent 1px); background-size: 20px 20px; }
+        
+        .course-card {
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            margin-bottom: 6px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid rgba(0,0,0,0.2);
+            transition: transform 0.2s;
+            cursor: default;
+        }
+        .course-name { font-weight: 700; display: block; margin-bottom: 2px; text-transform: uppercase; line-height: 1.2; }
+        .course-info { font-size: 11px; opacity: 0.95; line-height: 1.4; }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+    <header class="w-full bg-white shadow-sm z-50 flex items-center justify-between px-6 py-4 border-b border-gray-200 sticky top-0">
+        <div class="flex items-center gap-3 w-64">
+            <div class="bg-indigo-600 p-2 rounded-lg"><i class="fas fa-graduation-cap text-white text-xl"></i></div>
+            <span class="text-2xl font-bold text-indigo-900 uppercase">EDUMIN</span>
+        </div>
+        <div class="flex items-center gap-6">
+            <div class="relative">
+                <i class="far fa-bell text-gray-600 text-xl"></i>
+                <span class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center">3</span>
+            </div>
+            <div class="relative">
+                <div class="flex items-center gap-3 border-l pl-6 border-gray-300 cursor-pointer" onclick="toggleUserDropdown(event)">
+                    <div class="text-right hidden sm:block">
+                        <p id="student-name-display" class="text-sm font-bold text-gray-800">Sinh Viên</p>
+                        <p id="student-info-display" class="text-[10px] text-gray-500 font-medium">Đã đăng nhập</p>
+                    </div>
+                    <img id="student-avatar-display" src="" class="w-10 h-10 rounded-full shadow-sm border border-gray-100 object-cover">
+                </div>
+                <div id="user-dropdown" class="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-xl py-2 z-[100]">
+                    <button class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 transition"><i class="fas fa-key mr-2"></i> Đổi mật khẩu</button>
+                    <button onclick="handleLogout()" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition"><i class="fas fa-sign-out-alt mr-2"></i> Đăng xuất</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="flex flex-1">
+        <aside class="w-64 bg-white shadow-lg hidden md:block overflow-y-auto border-r border-gray-100 sticky top-[73px] h-[calc(100vh-73px)]">
+            <nav class="mt-8 px-4">
+                <p class="text-xs font-semibold text-gray-400 uppercase px-2 mb-2">Học tập</p>
+                <ul class="space-y-1">
+                    <li><a href="sv.html" class="flex items-center gap-3 p-3 text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg transition-all"><i class="fas fa-th-large w-5 text-center"></i> <span>Dashboard</span></a></li>
+                    <li>
+                        <button onclick="toggleSubmenu('submenu-hoc-tap', 'arrow-ht')" class="w-full flex items-center justify-between p-3 text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg transition-all">
+                            <div class="flex items-center gap-3"><i class="fas fa-book-open w-5 text-center"></i><span>Khóa học</span></div>
+                            <i id="arrow-ht" class="fas fa-chevron-down text-[10px] menu-arrow"></i>
+                        </button>
+                        <div id="submenu-hoc-tap" class="submenu-container">
+                            <ul class="pl-2 mt-1 space-y-1 border-l-2 border-indigo-100 ml-6">
+                                <li><a href="danhsachtailieusv.html" class="block p-2 text-sm text-gray-500 hover:text-indigo-600 transition">Danh sách tài liệu</a></li>
+                                <li><a href="danhsachbaitapsv.html" class="block p-2 text-sm text-gray-500 hover:text-indigo-600 transition">Danh sách bài tập</a></li>
+                            </ul>
+                        </div>
+                    </li>
+                    <li><a href="thoikhoabieusv.html" class="flex items-center gap-3 p-3 bg-indigo-50 text-indigo-600 rounded-lg font-bold"><i class="fas fa-history w-5 text-center"></i><span>Thời khoá biểu</span></a></li>
+                    <li><a href="dangkyhocphansv.html" class="flex items-center gap-3 p-3 text-gray-600 hover:bg-gray-50 hover:text-indigo-600 rounded-lg transition-all"><i class="fas fa-layer-group w-5 text-center"></i><span>Đăng ký học phần</span></a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="flex-1 p-4 md:p-6 overflow-y-auto">
+            <div class="bg-white rounded-t-xl border border-gray-200 p-4 flex flex-wrap items-center justify-between gap-4">
+                <h2 class="text-xl font-bold text-gray-700">Lịch học theo tuần</h2>
+                <div class="flex items-center gap-2">
+                    <div class="flex items-center bg-gray-100 rounded-lg p-1">
+                        <input type="date" id="datePicker" class="bg-transparent border-none text-sm focus:ring-0 cursor-pointer">
+                    </div>
+                    <button onclick="navigateWeek('today')" class="bg-sky-500 text-white px-4 py-1.5 rounded text-sm font-medium hover:bg-sky-600 flex items-center gap-2">
+                        <i class="fas fa-calendar-check"></i> Hiện tại
+                    </button>
+                    <button onclick="navigateWeek('prev')" class="bg-sky-500 text-white px-3 py-1.5 rounded text-sm hover:bg-sky-600">
+                        <i class="fas fa-chevron-left"></i> Trở về
+                    </button>
+                    <button onclick="navigateWeek('next')" class="bg-sky-500 text-white px-3 py-1.5 rounded text-sm hover:bg-sky-600">
+                        Tiếp <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-white border-x border-b border-gray-200 overflow-x-auto shadow-sm">
+                <table class="tkb-table">
+                    <thead>
+                        <tr id="header-days">
+                            <th class="ca-hoc-col border-r">Ca học</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="ca-hoc-col">Sáng</td>
+                            <td class="tkb-cell" id="cell-Mon-sang"></td>
+                            <td class="tkb-cell" id="cell-Tue-sang"></td>
+                            <td class="tkb-cell" id="cell-Wed-sang"></td>
+                            <td class="tkb-cell" id="cell-Thu-sang"></td>
+                            <td class="tkb-cell" id="cell-Fri-sang"></td>
+                            <td class="tkb-cell" id="cell-Sat-sang"></td>
+                            <td class="tkb-cell" id="cell-Sun-sang"></td>
+                        </tr>
+                        <tr>
+                            <td class="ca-hoc-col">Chiều</td>
+                            <td class="tkb-cell" id="cell-Mon-chieu"></td>
+                            <td class="tkb-cell" id="cell-Tue-chieu"></td>
+                            <td class="tkb-cell" id="cell-Wed-chieu"></td>
+                            <td class="tkb-cell" id="cell-Thu-chieu"></td>
+                            <td class="tkb-cell" id="cell-Fri-chieu"></td>
+                            <td class="tkb-cell" id="cell-Sat-chieu"></td>
+                            <td class="tkb-cell" id="cell-Sun-chieu"></td>
+                        </tr>
+                        <tr>
+                            <td class="ca-hoc-col">Tối</td>
+                            <td class="tkb-cell" id="cell-Mon-toi"></td>
+                            <td class="tkb-cell" id="cell-Tue-toi"></td>
+                            <td class="tkb-cell" id="cell-Wed-toi"></td>
+                            <td class="tkb-cell" id="cell-Thu-toi"></td>
+                            <td class="tkb-cell" id="cell-Fri-toi"></td>
+                            <td class="tkb-cell" id="cell-Sat-toi"></td>
+                            <td class="tkb-cell" id="cell-Sun-toi"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        let currentViewDate = new Date();
+        const colors = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4'];
+
+        const SHIFTS = [
+            { id: "S1", group: "sang" }, { id: "S2", group: "sang" },
+            { id: "C1", group: "chieu" }, { id: "C2", group: "chieu" },
+            { id: "T1", group: "toi" }
+        ];
+
+        function toggleSubmenu(menuId, arrowId) {
+            const menu = document.getElementById(menuId);
+            const arrow = document.getElementById(arrowId);
+            if(menu && arrow) {
+                menu.classList.toggle('open');
+                arrow.classList.toggle('rotate-180');
+            }
+        }
+
+        function toggleUserDropdown(event) {
+            event.stopPropagation();
+            document.getElementById('user-dropdown').classList.toggle('show');
+        }
+
+        window.onclick = function(event) {
+            if (!event.target.closest('.relative')) {
+                const dropdown = document.getElementById('user-dropdown');
+                if(dropdown) dropdown.classList.remove('show');
+            }
+        }
+
+        function getStartOfWeek(date) {
+            const d = new Date(date);
+            const day = d.getDay();
+            const diff = d.getDate() - day + (day === 0 ? -6 : 1); 
+            return new Date(d.setDate(diff));
+        }
+
+        function formatDate(date) {
+            const dd = String(date.getDate()).padStart(2, '0');
+            const mm = String(date.getMonth() + 1).padStart(2, '0');
+            const yyyy = date.getFullYear();
+            return `${dd}/${mm}/${yyyy}`;
+        }
+
+        function padTeacherID(id) {
+            if(!id) return "N/A";
+            return "GV-" + String(id).padStart(3, '0');
+        }
+
+        // Ánh xạ ShiftId sang nhóm "sang", "chieu", "toi"
+        function getSessionFromShiftId(shiftId) {
+            const shift = SHIFTS.find(s => s.id === shiftId);
+            return shift ? shift.group : null;
+        }
+
+        function renderCalendar() {
+            const startOfWeek = getStartOfWeek(currentViewDate);
+            const headerRow = document.getElementById('header-days');
+            headerRow.innerHTML = '<th class="ca-hoc-col border-r">Ca học</th>';
+
+            // Reset bảng
+            document.querySelectorAll('.tkb-cell').forEach(cell => cell.innerHTML = '');
+
+            const dayNames = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ nhật"];
+            const dayKeys = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+            
+            const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+            if (!currentUser) return;
+            
+            const studentRegs = JSON.parse(localStorage.getItem('studentRegistrations')) || [];
+            const myEnrollments = studentRegs.filter(reg => reg.studentId === currentUser.id);
+
+            // Render Header & Buổi học
+            for (let i = 0; i < 7; i++) {
+                const dateInWeek = new Date(startOfWeek);
+                dateInWeek.setDate(startOfWeek.getDate() + i);
+                dateInWeek.setHours(0,0,0,0);
+
+                const dateStr = formatDate(dateInWeek);
+                const th = document.createElement('th');
+                th.className = "text-center";
+                th.innerHTML = `<div class="text-sky-600">${dayNames[i]}</div><div class="text-sky-600 font-normal text-sm">${dateStr}</div>`;
+                headerRow.appendChild(th);
+
+                myEnrollments.forEach((course, idx) => {
+                    const startDate = new Date(course.studyStart);
+                    startDate.setHours(0,0,0,0);
+                    const endDate = new Date(course.studyEnd);
+                    endDate.setHours(23,59,59,999);
+
+                    if (dateInWeek >= startDate && dateInWeek <= endDate) {
+                        if (course.schedules && Array.isArray(course.schedules)) {
+                            course.schedules.forEach(sessionData => {
+                                const checkDayId = (i === 6) ? "CN" : (i + 2).toString();
+
+                                if (sessionData.dayId === checkDayId) {
+                                    const sessionGroup = getSessionFromShiftId(sessionData.shiftId);
+                                    if (sessionGroup) {
+                                        const cellId = `cell-${dayKeys[i]}-${sessionGroup}`;
+                                        const cell = document.getElementById(cellId);
+
+                                        if (cell) {
+                                            const color = colors[idx % colors.length];
+                                            const card = document.createElement('div');
+                                            card.className = "course-card";
+                                            card.style.backgroundColor = color;
+                                            // Cập nhật hiển thị: Giảng viên + (Mã GV)
+                                            card.innerHTML = `
+                                                <span class="course-name">${course.courseName}</span>
+                                                <div class="course-info" style="white-space: nowrap;">
+                                                    <i class="fas fa-clock mr-1"></i>${sessionData.shiftLabel}<br>
+                                                    <i class="fas fa-map-marker-alt mr-1"></i>Phòng: ${course.room || 'Học Online'}<br>
+                                                    <i class="fas fa-user-tie mr-1"></i>${course.teacher || 'Giảng viên'} 
+                                                    <div class="teacher-id" style="font-size: 0.9em; margin-left: 14px;">
+                                                        (${padTeacherID(course.teacherId)})
+                                                    </div>
+                                                </div>
+                                            `;
+                                            cell.appendChild(card);
+                                        }
+                                    }
+                                }
+                            });
+                        }
+                    }
+                });
+            }
+            document.getElementById('datePicker').value = currentViewDate.toISOString().split('T')[0];
+        }
+
+        function navigateWeek(type) {
+            if (type === 'today') currentViewDate = new Date();
+            else if (type === 'prev') currentViewDate.setDate(currentViewDate.getDate() - 7);
+            else if (type === 'next') currentViewDate.setDate(currentViewDate.getDate() + 7);
+            renderCalendar();
+        }
+
+        document.getElementById('datePicker').addEventListener('change', (e) => {
+            currentViewDate = new Date(e.target.value);
+            renderCalendar();
+        });
+
+        function handleLogout() {
+            sessionStorage.removeItem('currentUser');
+            window.location.href = "../../loginform/login.html";
+        }
+
+        function renderStudentInfo() {
+            const user = JSON.parse(sessionStorage.getItem('currentUser'));
+            if (user) {
+                document.getElementById('student-name-display').innerText = "SV. " + (user.hoTen || user.name || "Sinh Viên");
+                const msv = user.id ? "SV-" + String(user.id).padStart(3, '0') : 'N/A';
+                document.getElementById('student-info-display').innerText = `MSV: ${msv}`;
+                if(user.avatar) document.getElementById('student-avatar-display').src = user.avatar;
+                else document.getElementById('student-avatar-display').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.hoTen || 'SV')}&background=10b981&color=fff`;
+            }
+        }
+
+        window.addEventListener('storage', (e) => {
+            if (['studentRegistrations', 'openRegistrations', 'currentUser'].includes(e.key)) {
+                renderCalendar();
+                renderStudentInfo();
+            }
+        });
+
+        document.addEventListener("DOMContentLoaded", () => {
+            renderStudentInfo();
+            renderCalendar();
+        });
+    </script>
+</body>
+</html>

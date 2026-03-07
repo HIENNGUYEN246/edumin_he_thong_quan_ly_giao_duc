@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edumin - Quản lý Giáo viên</title>
+    <script src="../../tailwind.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Poppins', sans-serif; background-color: #f3f4f9; }
+        .active-menu { background-color: #eef2ff; color: #4f46e5; border-right: 4px solid #4f46e5; font-weight: 600; }
+        .submenu-container { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-in-out; }
+        .submenu-container.open { max-height: 200px; }
+        .menu-arrow { transition: transform 0.3s ease; }
+        .rotate-180 { transform: rotate(180deg); }
+        
+        .modal { 
+            display: none; 
+            position: fixed; 
+            z-index: 100; 
+            left: 0; 
+            top: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: rgba(0,0,0,0.6); 
+            backdrop-filter: blur(4px); 
+            align-items: center; 
+            justify-content: center; 
+        }
+
+        #confirmContent { transition: all 0.3s ease; }
+
+        .custom-scrollbar::-webkit-scrollbar { height: 6px; width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #c7d2fe; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #818cf8; }
+
+        #user-dropdown { display: none; }
+        #user-dropdown.show { display: block; }
+
+        .avatar-upload-container {
+            position: relative;
+            width: 150px;
+            height: 150px;
+            margin: 0 auto;
+        }
+        .avatar-preview {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 4px solid #fff;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            object-fit: cover;
+            background-color: #f8fafc;
+        }
+        .upload-btn {
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+            background: #4f46e5;
+            color: white;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 3px solid #fff;
+        }
+        .upload-btn:hover { background: #4338ca; transform: scale(1.1); }
+        
+        input:invalid { border-color: #ef4444; }
+
+        .sticky-col {
+            position: sticky;
+            right: 0;
+            background-color: white;
+            z-index: 10;
+            box-shadow: -2px 0 5px rgba(0,0,0,0.05);
+        }
+        tr:hover .sticky-col {
+            background-color: #f5f7ff; 
+        }
+        th.sticky-col {
+            background-color: #f9fafb !important;
+            z-index: 20;
+        }
+        /* CSS bổ sung cho lỗi ảnh */
+        .avatar-error { border: 4px solid #ef4444 !important; }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen" onload="initPage()">
+
+    <header class="w-full bg-white shadow-sm z-50 flex items-center justify-between px-6 py-4 border-b border-gray-200">
+        <div class="flex items-center gap-3 w-64">
+            <div class="bg-indigo-600 p-2 rounded-lg">
+                <i class="fas fa-graduation-cap text-white text-xl"></i>
+            </div>
+            <span class="text-2xl font-bold text-indigo-900 uppercase">EDUMIN</span>
+        </div>
+
+        <div class="flex items-center gap-6">
+            <div class="relative">
+                <i class="far fa-bell text-gray-600 text-xl"></i>
+                <span class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center">15</span>
+            </div>
+            <div class="relative">
+                <div class="flex items-center gap-3 border-l pl-6 border-gray-300 cursor-pointer" onclick="toggleUserDropdown(event)">
+                    <div class="text-right hidden sm:block">
+                        <p id="admin-name" class="text-sm font-bold text-gray-800">Đang tải...</p>
+                        <p class="text-xs text-gray-500">Đã đăng nhập</p>
+                    </div>
+                    <img id="admin-avatar" src="https://ui-avatars.com/api/?name=Admin+User&background=6366f1&color=fff" class="w-10 h-10 rounded-full shadow-sm">
+                </div>
+
+                <div id="user-dropdown" class="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-xl py-2 z-[100]">
+                    <button onclick="openChangePasswordModal()" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 transition">
+                        <i class="fas fa-key mr-2"></i> Đổi mật khẩu
+                    </button>
+                    <button onclick="handleLogout()" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition">
+                        <i class="fas fa-sign-out-alt mr-2"></i> Đăng xuất
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="flex flex-1 overflow-hidden">
+        <aside class="w-64 bg-white shadow-lg hidden md:block overflow-y-auto border-r border-gray-100">
+            <nav class="mt-8 px-4">
+                <p class="text-xs font-semibold text-gray-400 uppercase px-2 mb-2">Main Menu</p>
+                <ul class="space-y-1">
+                    <li>
+                        <a href="pdt.html" class="flex items-center gap-3 p-3 text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg transition">
+                            <i class="fas fa-th-large w-5 text-center"></i> 
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+
+                    <li>
+                        <button onclick="toggleSubmenu('submenu-gv', 'arrow-gv')" class="w-full flex items-center justify-between p-3 bg-indigo-50 text-indigo-600 rounded-lg transition-all">
+                            <div class="flex items-center gap-3">
+                                <i class="fas fa-user-tie w-5 text-center"></i> 
+                                <span>Giảng viên</span>
+                            </div>
+                            <i id="arrow-gv" class="fas fa-chevron-down text-[10px] menu-arrow rotate-180"></i>
+                        </button>
+                        <div id="submenu-gv" class="submenu-container open">
+                            <ul class="pl-2 mt-1 space-y-1 border-l-2 border-indigo-100 ml-6">
+                                <li><a href="quanlygv.html" class="block p-2 text-sm text-indigo-600 font-bold transition">Danh sách giảng viên</a></li>
+                                <li><a href="taikhoangv.html" class="block p-2 text-sm text-gray-500 hover:text-indigo-600 transition">Tài khoản giảng viên</a></li>
+                            </ul>
+                        </div>
+                    </li>
+
+                    <li>
+                        <button onclick="toggleSubmenu('submenu-sv', 'arrow-sv')" class="w-full flex items-center justify-between p-3 text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg transition-all">
+                            <div class="flex items-center gap-3">
+                                <i class="fas fa-user-graduate w-5 text-center"></i> 
+                                <span>Sinh viên</span>
+                            </div>
+                            <i id="arrow-sv" class="fas fa-chevron-down text-[10px] menu-arrow"></i>
+                        </button>
+                        <div id="submenu-sv" class="submenu-container">
+                            <ul class="pl-2 mt-1 space-y-1 border-l-2 border-indigo-100 ml-6">
+                                <li><a href="quanlysv.html" class="block p-2 text-sm text-gray-500 hover:text-indigo-600 transition">Danh sách sinh viên</a></li>
+                                <li><a href="taikhoansv.html" class="block p-2 text-sm text-gray-500 hover:text-indigo-600 transition">Tài khoản sinh viên</a></li>
+                            </ul>
+                        </div>
+                    </li>
+                    <li>
+                        <a href="quanlykhoa.html" class="flex items-center gap-3 p-3 text-gray-600 hover:bg-gray-50 hover:text-indigo-600 rounded-lg transition-all">
+                            <i class="fa-solid fa-graduation-cap w-5 text-center"></i> 
+                            <span>Khoa</span>
+                        </a>
+                    </li>
+                    <li>
+                        <button onclick="toggleSubmenu('submenu-hp', 'arrow-hp')" class="w-full flex items-center justify-between p-3 text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg transition-all">
+                            <div class="flex items-center gap-3">
+                                <i class="fa-solid fa-book-open w-5 text-center"></i> 
+                                <span>Học phần</span>
+                            </div>
+                            <i id="arrow-hp" class="fas fa-chevron-down text-[10px] menu-arrow"></i>
+                        </button>
+                        <div id="submenu-hp" class="submenu-container">
+                            <ul class="pl-2 mt-1 space-y-1 border-l-2 border-indigo-100 ml-6">
+                                <li><a href="quanlyhocphan.html" class="block p-2 text-sm text-gray-500 hover:text-indigo-600 transition">Danh sách học phần</a></li>
+                                <li><a href="dangkyhocphan.html" class="block p-2 text-sm text-gray-500 hover:text-indigo-600 transition">Đăng ký học phần</a></li>
+                            </ul>
+                        </div>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="flex-1 p-4 md:p-8 overflow-y-auto">
+            <div class="mb-6 flex justify-between items-end">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-800">Danh sách giảng viên</h2>
+                    <p class="text-sm text-gray-500">Quản lý và điều chỉnh thông tin đội ngũ cán bộ</p>
+                </div>
+                <div class="flex gap-3">
+                    <input type="file" id="importExcel" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleImportExcel(event)">
+                    <button onclick="document.getElementById('importExcel').click()" class="bg-emerald-600 text-white px-5 py-2.5 rounded-xl hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-100 flex items-center gap-2">
+                        <i class="fas fa-file-excel"></i> Import Excel
+                    </button>
+                    <button onclick="openTeacherModal()" class="bg-indigo-600 text-white px-5 py-2.5 rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 flex items-center gap-2">
+                        <i class="fas fa-plus"></i> Thêm giảng viên
+                    </button>
+                </div>
+            </div>
+
+            <div class="mb-6 bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                    <div class="relative">
+                        <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                        <input type="text" id="searchInput" oninput="renderTeachers()" placeholder="Tên, Email hoặc ID..." 
+                            class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-400 outline-none text-sm">
+                    </div>
+
+                    <select id="filterDept" onchange="renderTeachers()" class="px-4 py-2 border border-gray-200 rounded-xl outline-none text-sm cursor-pointer hover:border-indigo-300">
+                        <option value="">Tất cả khoa</option>
+                    </select>
+
+                    <div class="flex gap-2">
+                        <select id="filterEdu" onchange="renderTeachers()" class="w-3/5 px-4 py-2 border border-gray-200 rounded-xl outline-none text-sm cursor-pointer">
+                            <option value="">Trình độ</option>
+                            <option value="Tiến sĩ">Tiến sĩ</option>
+                            <option value="Thạc sĩ">Thạc sĩ</option>
+                            <option value="Kỹ sư">Kỹ sư</option>
+                            <option value="PGS. Tiến sĩ">PGS. Tiến sĩ</option>
+                            <option value="GS. Tiến sĩ">GS. Tiến sĩ</option>
+                        </select>
+                        <select id="filterGender" onchange="renderTeachers()" class="w-2/5 px-2 py-2 border border-gray-200 rounded-xl outline-none text-sm cursor-pointer">
+                            <option value="">Phái</option>
+                            <option value="Nam">Nam</option>
+                            <option value="Nữ">Nữ</option>
+                        </select>
+                    </div>
+
+                    <div class="relative">
+                        <i class="fas fa-map-marker-alt absolute left-3 top-3 text-gray-400"></i>
+                        <input type="text" id="filterAddress" oninput="renderTeachers()" placeholder="Lọc theo tỉnh thành..." 
+                            class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-400 outline-none text-sm">
+                    </div>
+
+                    <div class="relative">
+                        <i class="fas fa-sort-alpha-down absolute left-3 top-3 text-indigo-500"></i>
+                        <select id="sortOrder" onchange="renderTeachers()" 
+                            class="w-full pl-10 pr-4 py-2 bg-indigo-50 border border-indigo-100 text-indigo-700 font-semibold rounded-xl outline-none text-sm cursor-pointer">
+                            <option value="id-asc">Cũ nhất (ID)</option>
+                            <option value="id-desc">Mới nhất (ID)</option>
+                            <option value="name-asc">Tên (A -> Z)</option>
+                            <option value="name-desc">Tên (Z -> A)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="overflow-x-auto custom-scrollbar">
+                    <table class="w-full text-left border-collapse min-w-[1400px]">
+                        <thead>
+                            <tr class="bg-gray-50/50 text-gray-400 text-[11px] uppercase tracking-wider border-b border-gray-100">
+                                <th class="px-4 py-4 font-semibold text-center w-24">Mã GV</th>
+                                <th class="px-4 py-4 font-semibold text-center w-32">Ảnh</th>
+                                <th class="px-4 py-4 font-semibold w-32">Trình độ</th> <th class="px-4 py-4 font-semibold min-w-[200px]">Họ và Tên</th>
+                                <th class="px-4 py-4 font-semibold w-32">Ngày sinh</th>
+                                <th class="px-4 py-4 font-semibold text-center w-20">Phái</th>
+                                <th class="px-4 py-4 font-semibold min-w-[200px]">Địa chỉ</th>
+                                <th class="px-4 py-4 font-semibold w-32">Điện thoại</th>
+                                <th class="px-4 py-4 font-semibold min-w-[250px]">Email</th>
+                                <th class="px-4 py-4 font-semibold min-w-[200px]">Khoa</th>
+                                <th class="px-4 py-4 font-semibold text-center w-28 sticky-col">Thao tác</th> </tr>
+                        </thead>
+                        <tbody id="teacherTableBody" class="divide-y divide-gray-50"></tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="changePasswordModal" class="fixed inset-0 bg-black bg-opacity-50 z-[200] hidden flex items-center justify-center">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+            <div class="bg-indigo-600 p-4 text-white flex justify-between items-center">
+                <h3 class="font-bold">Đổi mật khẩu</h3>
+                <button onclick="closeChangePasswordModal()" class="text-white hover:text-gray-200"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Mật khẩu cũ</label>
+                    <input type="password" id="oldPassword" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="Nhập mật khẩu cũ">
+                    <p id="error-oldPassword" class="text-red-500 text-xs mt-1 hidden"></p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Mật khẩu mới</label>
+                    <input type="password" id="newPassword" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="Tối thiểu 6 ký tự">
+                    <p id="error-newPassword" class="text-red-500 text-xs mt-1 hidden"></p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Xác nhận mật khẩu</label>
+                    <input type="password" id="confirmPassword" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="Nhập lại mật khẩu mới">
+                    <p id="error-confirmPassword" class="text-red-500 text-xs mt-1 hidden"></p>
+                </div>
+                <div class="flex gap-3 pt-2">
+                    <button onclick="closeChangePasswordModal()" class="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium">Hủy</button>
+                    <button onclick="submitChangePassword()" class="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium">Cập nhật</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="teacherModal" class="modal p-4">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-5xl overflow-hidden flex flex-col md:flex-row max-h-[90vh]">
+            <div class="md:w-1/3 bg-indigo-600 p-8 text-white flex flex-col items-center justify-center text-center">
+                <div class="avatar-upload-container mb-6">
+                    <img id="image-preview" src="https://ui-avatars.com/api/?name=G+V&size=200&background=f1f5f9&color=6366f1" class="avatar-preview object-cover">
+                    <label for="avatarFile" class="upload-btn">
+                        <i class="fas fa-camera text-sm"></i>
+                    </label>
+                    <input type="file" id="avatarFile" accept="image/*" class="hidden">
+                </div>
+                <h3 id="preview-name" class="text-xl font-bold mb-1">Họ tên giảng viên</h3>
+                <p id="preview-edu" class="text-indigo-200 text-sm mb-4">Trình độ chuyên môn</p>
+                <div class="w-full border-t border-indigo-500/50 pt-6 mt-2 space-y-3 text-left">
+                    <div class="flex items-center gap-3 text-sm"><i class="fas fa-id-card w-5 text-indigo-300"></i> <span id="preview-id">Mã GV: Sẽ tự động tạo</span></div>
+                    <div class="flex items-center gap-3 text-sm"><i class="fas fa-envelope w-5 text-indigo-300"></i> <span id="preview-email" class="truncate">Email chưa cập nhật</span></div>
+                    <div class="flex items-center gap-3 text-sm"><i class="fas fa-building w-5 text-indigo-300"></i> <span id="preview-dept">Khoa chưa chọn</span></div>
+                </div>
+            </div>
+
+            <div class="md:w-2/3 flex flex-col bg-white overflow-hidden">
+                <div class="px-8 pt-8 pb-2 flex justify-between items-center">
+                    <h2 id="modalTitle" class="text-2xl font-bold text-gray-800">Thêm Giảng Viên Mới</h2>
+                    <button onclick="closeTeacherModal()" class="text-gray-400 hover:text-gray-600 transition"><i class="fas fa-times text-xl"></i></button>
+                </div>
+
+                <div class="px-8 pt-4 pb-8 flex-1 overflow-y-auto custom-scrollbar">
+                    <form id="teacherForm" class="space-y-6" novalidate>
+                        <input type="hidden" id="editId">
+                        <div class="space-y-4">
+                            <p class="text-xs font-bold text-indigo-600 uppercase tracking-wider"><i class="fas fa-user mr-2"></i>Thông tin cá nhân</p>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-500 mb-1">Họ và tên</label>
+                                    <input type="text" id="name" oninput="updatePreview()" placeholder="Nguyễn Văn A" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none">
+                                    <span id="error-name" class="text-red-500 text-[10px] mt-1 hidden"></span>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-500 mb-1">Ngày sinh</label>
+                                    <input type="date" id="dob" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none">
+                                    <span id="error-dob" class="text-red-500 text-[10px] mt-1 hidden"></span>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-500 mb-1">Số điện thoại</label>
+                                    <input type="text" id="phone" placeholder="09xxxxxxxx" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none">
+                                    <span id="error-phone" class="text-red-500 text-[10px] mt-1 hidden"></span>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-500 mb-1">Giới tính</label>
+                                    <select id="gender" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none">
+                                        <option value="Nam">Nam</option>
+                                        <option value="Nữ">Nữ</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-500 mb-1">Địa chỉ cư trú</label>
+                                <input type="text" id="address" placeholder="Số nhà, đường..." class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none">
+                                <span id="error-address" class="text-red-500 text-[10px] mt-1 hidden"></span>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4 pt-4">
+                            <p class="text-xs font-bold text-indigo-600 uppercase tracking-wider"><i class="fas fa-briefcase mr-2"></i>Thông tin công tác</p>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-500 mb-1">Email nội bộ</label>
+                                    <input type="email" id="email" oninput="updatePreview()" placeholder="example@university.edu.vn" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none">
+                                    <span id="error-email" class="text-red-500 text-[10px] mt-1 hidden"></span>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-500 mb-1">Trình độ</label>
+                                    <select id="education" onchange="updatePreview()" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none">
+                                        <option value="">Chọn trình độ</option>
+                                        <option value="Kỹ sư">Kỹ sư</option>
+                                        <option value="Thạc sĩ">Thạc sĩ</option>
+                                        <option value="Tiến sĩ">Tiến sĩ</option>
+                                        <option value="PGS. Tiến sĩ">PGS. Tiến sĩ</option>
+                                        <option value="GS. Tiến sĩ">GS. Tiến sĩ</option>
+                                    </select>
+                                    <span id="error-education" class="text-red-500 text-[10px] mt-1 hidden"></span>
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="block text-xs font-semibold text-gray-500 mb-1">Khoa</label>
+                                    <select id="department" onchange="updatePreview()" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none">
+                                        <option value="">Chọn khoa</option>
+                                    </select>
+                                    <span id="error-department" class="text-red-500 text-[10px] mt-1 hidden"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="error-avatarFile" class="text-red-500 text-xs text-center font-bold hidden bg-red-50 p-2 rounded-lg">Bắt buộc phải tải ảnh lên</div>
+                    </form>
+                </div>
+
+                <div class="p-6 border-t border-gray-100 bg-gray-50 flex gap-4">
+                    <button type="button" onclick="closeTeacherModal()" class="flex-1 px-6 py-3 border border-gray-200 text-gray-600 rounded-xl font-bold hover:bg-white transition uppercase text-xs tracking-widest">Hủy bỏ</button>
+                    <button type="submit" form="teacherForm" class="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition uppercase text-xs tracking-widest">Lưu dữ liệu</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="confirmModal" class="modal p-4">
+        <div id="confirmContent" class="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl transform scale-95 opacity-0">
+            <div class="text-center">
+                <div class="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-red-100 mb-6">
+                    <i class="fas fa-trash-alt text-red-600 text-3xl"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-900 mb-2">Xác nhận xóa?</h3>
+                <p class="text-sm text-gray-500 mb-8 leading-relaxed">Hành động này không thể hoàn tác.</p>
+            </div>
+            <div class="flex gap-4">
+                <button onclick="closeConfirmModal()" class="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition">Hủy</button>
+                <button id="btnConfirmDelete" class="flex-1 px-4 py-3 bg-red-600 text-white rounded-xl font-bold shadow-lg shadow-red-200 hover:bg-red-700 transition">Xác nhận xóa</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // HÀM TIỆN ÍCH CHUYỂN ĐỔI NGÀY TỪ EXCEL
+        function parseExcelDate(dateValue) {
+            if (!dateValue) return "";
+            if (typeof dateValue === 'number') {
+                const date = XLSX.SSF.parse_date_code(dateValue);
+                return `${date.y}-${String(date.m).padStart(2, '0')}-${String(date.d).padStart(2, '0')}`;
+            }
+            let dateStr = dateValue.toString().trim();
+            const parts = dateStr.split(/[\/\-\.]/);
+            if (parts.length === 3) {
+                if (parts[0].length === 4) return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+                if (parts[2].length === 4) return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+            }
+            return dateStr;
+        }
+
+        function initPage() {
+            loadAdminInfo();
+            updateDepartmentDropdowns(); 
+            renderTeachers();
+            setupAvatarPreview();
+            
+            const today = new Date();
+            const maxYear = today.getFullYear() - 24; // Rule: Phải từ 24 tuổi trở lên
+            const maxDate = new Date(maxYear, today.getMonth(), today.getDate()).toISOString().split('T')[0];
+            const dobInput = document.getElementById('dob');
+            if (dobInput) dobInput.setAttribute('max', maxDate);
+        }
+
+        function loadAdminInfo() {
+            const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+            if (!currentUser || currentUser.role !== 'dao-tao') {
+                alert("Phiên đăng nhập hết hạn!");
+                window.location.href = "../../loginform/login.html";
+                return;
+            }
+            document.getElementById('admin-name').innerText = currentUser.hoTen;
+            const encodedName = encodeURIComponent(currentUser.hoTen);
+            document.getElementById('admin-avatar').src = `https://ui-avatars.com/api/?name=${encodedName}&background=6366f1&color=fff`;
+        }
+
+        function handleImportExcel(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const json = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+
+                    let teachers = JSON.parse(localStorage.getItem('teachersData')) || [];
+                    let importedCount = 0;
+                    let errorDetails = [];
+
+                    json.forEach((row, index) => {
+                        const keys = Object.keys(row);
+                        const find = (names) => {
+                            const foundKey = keys.find(k => names.includes(k.trim()));
+                            return foundKey ? row[foundKey] : "";
+                        };
+
+                        let rawId = find(["MaGV", "Mã GV", "ID"]);
+                        if (rawId === "") return;
+
+                        let id = parseInt(rawId.toString().replace(/[^0-9]/g, ""));
+                        if (isNaN(id)) {
+                            errorDetails.push(`Dòng ${index + 2}: Mã GV không đúng.`);
+                            return;
+                        }
+
+                        if (teachers.some(t => t.id === id)) {
+                            errorDetails.push(`Dòng ${index + 2}: Mã GV-${id} đã tồn tại.`);
+                            return;
+                        }
+
+                        const hoTen = find(["HoTen", "Họ tên", "Họ và Tên"]);
+                        let sdtRaw = find(["SDT", "Số điện thoại"]).toString().trim();
+                        if (sdtRaw.startsWith("'")) sdtRaw = sdtRaw.substring(1);
+
+                        const newTeacher = {
+                            id: id,
+                            name: hoTen || "Ẩn danh",
+                            dob: parseExcelDate(find(["NgaySinh", "Ngày sinh"])),
+                            address: find(["DiaChi", "Địa chỉ"]) || "",
+                            gender: find(["GioiTinh", "Giới tính"]) || "Nam",
+                            phone: sdtRaw,
+                            email: find(["Email"]),
+                            department: find(["Khoa"]),
+                            education: find(["TrinhDo", "Trình độ"]),
+                            avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(hoTen || 'GV')}&background=random&color=fff`,
+                            password: "123",
+                            status: "Active"
+                        };
+                        teachers.push(newTeacher);
+                        importedCount++;
+                    });
+
+                    localStorage.setItem('teachersData', JSON.stringify(teachers));
+                    renderTeachers();
+                    
+                    if (errorDetails.length > 0) {
+                        Swal.fire({
+                            title: 'Kết quả Import',
+                            html: `Thành công: <b>${importedCount}</b><br>Lỗi: <b>${errorDetails.length}</b><div class="text-red-500 text-left text-xs max-h-40 overflow-y-auto border p-2 bg-gray-50 mt-2">${errorDetails.join('<br>')}</div>`,
+                            icon: 'warning'
+                        });
+                    } else {
+                        Swal.fire('Thành công', `Đã nhập ${importedCount} giảng viên.`, 'success');
+                    }
+                } catch (err) {
+                    Swal.fire('Lỗi', 'Không thể đọc file. Hãy kiểm tra định dạng.', 'error');
+                }
+            };
+            reader.readAsArrayBuffer(file);
+            event.target.value = ""; 
+        }
+
+        function toggleUserDropdown(event) {
+            event.stopPropagation();
+            document.getElementById('user-dropdown').classList.toggle('show');
+        }
+        window.onclick = function(event) {
+            if (!event.target.closest('.relative')) {
+                const dropdown = document.getElementById('user-dropdown');
+                if (dropdown) dropdown.classList.remove('show');
+            }
+        }
+        function openChangePasswordModal() {
+            document.getElementById('changePasswordModal').style.display = 'flex';
+            document.getElementById('user-dropdown').classList.remove('show');
+        }
+        function closeChangePasswordModal() {
+            document.getElementById('changePasswordModal').style.display = 'none';
+            resetPasswordForm();
+        }
+        function resetPasswordForm() {
+            ['oldPassword', 'newPassword', 'confirmPassword'].forEach(id => {
+                const input = document.getElementById(id);
+                if (input) {
+                    input.value = '';
+                    input.classList.remove('border-red-500');
+                    document.getElementById(`error-${id}`).classList.add('hidden');
+                }
+            });
+        }
+        function showPassError(id, message) {
+            const input = document.getElementById(id);
+            const errorText = document.getElementById(`error-${id}`);
+            input.classList.add('border-red-500');
+            errorText.innerText = message;
+            errorText.classList.remove('hidden');
+        }
+        function submitChangePassword() {
+            resetPasswordForm();
+            const oldPass = document.getElementById('oldPassword').value;
+            const newPass = document.getElementById('newPassword').value;
+            const confirmPass = document.getElementById('confirmPassword').value;
+            const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+            let hasError = false;
+            if (!oldPass) { showPassError('oldPassword', 'Bắt buộc'); hasError = true; }
+            if (!newPass) { showPassError('newPassword', 'Bắt buộc'); hasError = true; }
+            if (!confirmPass) { showPassError('confirmPassword', 'Bắt buộc'); hasError = true; }
+            if (hasError) return;
+            if (oldPass !== currentUser.password) { showPassError('oldPassword', 'Sai mật khẩu'); return; }
+            if (newPass.length < 6) { showPassError('newPassword', 'Tối thiểu 6 ký tự'); return; }
+            if (newPass !== confirmPass) { showPassError('confirmPassword', 'Không khớp'); return; }
+            currentUser.password = newPass;
+            sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+            alert("Đổi mật khẩu thành công!");
+            closeChangePasswordModal();
+        }
+        function handleLogout() {
+            sessionStorage.removeItem('currentUser');
+            window.location.href = "../../loginform/login.html";
+        }
+        function updateDepartmentDropdowns() {
+            const departments = JSON.parse(localStorage.getItem('departmentsData')) || [];
+            const filterDept = document.getElementById('filterDept');
+            const formDept = document.getElementById('department');
+            if (filterDept && formDept) {
+                const currentFilter = filterDept.value;
+                const currentForm = formDept.value;
+                filterDept.innerHTML = '<option value="">Tất cả khoa</option>';
+                formDept.innerHTML = '<option value="">Chọn khoa công tác</option>';
+                departments.forEach(dept => {
+                    const opt1 = document.createElement('option');
+                    opt1.value = dept.name; opt1.textContent = dept.name;
+                    filterDept.appendChild(opt1);
+                    const opt2 = document.createElement('option');
+                    opt2.value = dept.name; opt2.textContent = dept.name;
+                    formDept.appendChild(opt2);
+                });
+                filterDept.value = currentFilter;
+                formDept.value = currentForm;
+            }
+        }
+        function setError(id, message) {
+            const input = document.getElementById(id);
+            const errorSpan = document.getElementById(`error-${id}`);
+            if (!input) return;
+            if (message) {
+                input.classList.add('border-red-500', 'ring-2', 'ring-red-100');
+                if(errorSpan) { errorSpan.innerText = message; errorSpan.classList.remove('hidden'); }
+            } else {
+                input.classList.remove('border-red-500', 'ring-2', 'ring-red-100');
+                if(errorSpan) errorSpan.classList.add('hidden');
+            }
+        }
+        function setupAvatarPreview() {
+            const input = document.getElementById('avatarFile');
+            const preview = document.getElementById('image-preview');
+            input.onchange = evt => {
+                const [file] = input.files;
+                if (file) {
+                    preview.src = URL.createObjectURL(file);
+                    document.getElementById('error-avatarFile').classList.add('hidden');
+                    preview.classList.remove('avatar-error');
+                }
+            }
+        }
+        function updatePreview() {
+            const name = document.getElementById('name').value;
+            const edu = document.getElementById('education').value;
+            const email = document.getElementById('email').value;
+            const dept = document.getElementById('department').value;
+            const id = document.getElementById('editId').value;
+            document.getElementById('preview-name').innerText = name || "Họ tên giảng viên";
+            document.getElementById('preview-edu').innerText = edu || "Trình độ chuyên môn";
+            document.getElementById('preview-email').innerText = email || "Email chưa cập nhật";
+            document.getElementById('preview-dept').innerText = dept || "Khoa chưa chọn"; 
+            document.getElementById('preview-id').innerText = id ? `Mã GV: GV-${id.toString().padStart(3, '0')}` : "Mã GV: Sẽ tạo mới";
+        }
+
+        function renderTeachers() {
+            let teachers = JSON.parse(localStorage.getItem('teachersData')) || [];
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const deptFilter = document.getElementById('filterDept').value;
+            const eduFilter = document.getElementById('filterEdu').value;
+            const genderFilter = document.getElementById('filterGender').value;
+            const addrFilter = document.getElementById('filterAddress').value.toLowerCase();
+            const sortVal = document.getElementById('sortOrder').value;
+
+            teachers = teachers.filter(t => {
+                const matchSearch = (t.name || "").toLowerCase().includes(searchTerm) || (t.email || "").toLowerCase().includes(searchTerm) || (t.id || "").toString().includes(searchTerm);
+                return matchSearch && 
+                        (!deptFilter || t.department === deptFilter) && 
+                        (!eduFilter || t.education === eduFilter) && 
+                        (!genderFilter || t.gender === genderFilter) && 
+                        (!addrFilter || (t.address || "").toLowerCase().includes(addrFilter));
+            });
+
+            const [criteria, direction] = sortVal.split('-');
+            teachers.sort((a, b) => {
+                let comp = criteria === 'id' ? a.id - b.id : a.name.localeCompare(b.name, 'vi');
+                return direction === 'asc' ? comp : -comp;
+            });
+
+            const tableBody = document.getElementById('teacherTableBody');
+            tableBody.innerHTML = '';
+            
+            if(teachers.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="11" class="p-8 text-center text-gray-400">Không có dữ liệu phù hợp</td></tr>';
+                return;
+            }
+
+            teachers.forEach(t => {
+                let displayDate = 'N/A';
+                if (t.dob && typeof t.dob === 'string' && t.dob.includes('-')) {
+                    displayDate = t.dob.split('-').reverse().join('/');
+                } else if (t.dob) {
+                    displayDate = t.dob;
+                }
+
+                tableBody.innerHTML += `
+                    <tr class="hover:bg-indigo-50/30 transition-colors text-sm text-gray-700">
+                        <td class="px-4 py-4 text-center font-bold text-indigo-600 whitespace-nowrap">GV-${t.id.toString().padStart(3, '0')}</td>
+                        <td class="px-4 py-4 text-center min-w-[100px]">
+                            <img src="${t.avatar}" class="w-10 h-10 rounded-full border border-gray-100 shadow-sm mx-auto object-cover" onerror="this.src='https://ui-avatars.com/api/?name=Error&background=ccc'">
+                        </td>
+                        <td class="px-4 py-4">
+                            <span class="bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded text-[10px] font-bold border border-indigo-100 whitespace-nowrap">${t.education}</span>
+                        </td>
+                        <td class="px-4 py-4 font-bold text-gray-900 whitespace-nowrap">${t.name}</td>
+                        <td class="px-4 py-4 whitespace-nowrap">${displayDate}</td>
+                        <td class="px-4 py-4 text-center">${t.gender}</td>
+                        <td class="px-4 py-4 max-w-[200px] truncate" title="${t.address}">${t.address}</td>
+                        <td class="px-4 py-4 font-medium whitespace-nowrap">${t.phone}</td>
+                        <td class="px-4 py-4 text-indigo-500 font-medium truncate max-w-[200px]" title="${t.email}">${t.email}</td>
+                        <td class="px-4 py-4 font-medium text-gray-800">${t.department}</td>
+                        <td class="px-4 py-4 text-center sticky-col">
+                            <div class="flex justify-center gap-2">
+                                <button onclick="openTeacherModal(${t.id})" class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-all"><i class="fas fa-edit text-xs"></i></button>
+                                <button onclick="deleteTeacher(${t.id})" class="w-8 h-8 rounded-lg bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-all"><i class="fas fa-trash-alt text-xs"></i></button>
+                            </div>
+                        </td>
+                    </tr>`;
+            });
+        }
+
+        function openTeacherModal(id = null) {
+            updateDepartmentDropdowns(); 
+            document.getElementById('teacherModal').style.display = 'flex';
+            document.getElementById('teacherForm').reset();
+            const fields = ['name', 'email', 'phone', 'dob', 'department', 'education', 'address'];
+            fields.forEach(f => setError(f, ''));
+            document.getElementById('error-avatarFile').classList.add('hidden');
+            document.getElementById('image-preview').classList.remove('avatar-error');
+
+            if (id) {
+                document.getElementById('modalTitle').innerText = "Cập Nhật Giảng Viên";
+                const teachers = JSON.parse(localStorage.getItem('teachersData'));
+                const t = teachers.find(x => x.id === id);
+                document.getElementById('editId').value = t.id;
+                document.getElementById('name').value = t.name;
+                document.getElementById('dob').value = t.dob;
+                document.getElementById('address').value = t.address;
+                document.getElementById('gender').value = t.gender;
+                document.getElementById('phone').value = t.phone;
+                document.getElementById('email').value = t.email;
+                document.getElementById('department').value = t.department;
+                document.getElementById('education').value = t.education;
+                document.getElementById('image-preview').src = t.avatar;
+            } else {
+                document.getElementById('modalTitle').innerText = "Thêm Giảng Viên Mới";
+                document.getElementById('editId').value = "";
+                document.getElementById('image-preview').src = "https://ui-avatars.com/api/?name=G+V&size=200&background=f1f5f9&color=6366f1";
+            }
+            updatePreview();
+        }
+        function closeTeacherModal() { document.getElementById('teacherModal').style.display = 'none'; }
+        let idToDelete = null;
+        function deleteTeacher(id) {
+            idToDelete = id;
+            document.getElementById('confirmModal').style.display = 'flex';
+            setTimeout(() => {
+                const content = document.getElementById('confirmContent');
+                content.classList.replace('scale-95', 'scale-100');
+                content.classList.replace('opacity-0', 'opacity-100');
+            }, 10);
+        }
+        function closeConfirmModal() {
+            const content = document.getElementById('confirmContent');
+            content.classList.replace('scale-100', 'scale-95');
+            content.classList.replace('opacity-100', 'opacity-0');
+            setTimeout(() => { document.getElementById('confirmModal').style.display = 'none'; idToDelete = null; }, 200);
+        }
+        document.getElementById('btnConfirmDelete').onclick = () => {
+            let teachers = JSON.parse(localStorage.getItem('teachersData')) || [];
+            localStorage.setItem('teachersData', JSON.stringify(teachers.filter(t => t.id !== idToDelete)));
+            renderTeachers(); closeConfirmModal();
+        };
+
+        // HÀM SUBMIT VỚI VALIDATION MỚI
+        document.getElementById('teacherForm').onsubmit = function(e) {
+            e.preventDefault();
+            const editId = document.getElementById('editId').value;
+            const teachers = JSON.parse(localStorage.getItem('teachersData')) || [];
+            let valid = true;
+
+            // 1. Kiểm tra rỗng chung
+            ['name', 'email', 'phone', 'dob', 'department', 'education', 'address'].forEach(f => {
+                const el = document.getElementById(f);
+                if (!el.value.trim()) { setError(f, "Thông tin này là bắt buộc"); valid = false; }
+                else setError(f, "");
+            });
+
+            // 2. Validation Số điện thoại (10 số, bắt đầu bằng 0)
+            const phoneVal = document.getElementById('phone').value.trim();
+            const phoneRegex = /^0\d{9}$/;
+            if (phoneVal && !phoneRegex.test(phoneVal)) {
+                setError('phone', "SĐT phải là 10 số và bắt đầu bằng số 0");
+                valid = false;
+            }
+
+            // 3. Validation Email (@university.edu.vn)
+            const emailVal = document.getElementById('email').value.trim();
+            if (emailVal && !emailVal.toLowerCase().endsWith('@university.edu.vn')) {
+                setError('email', "Email phải có đuôi @university.edu.vn");
+                valid = false;
+            }
+
+            // 4. Validation Tuổi (>= 24 tuổi)
+            const dobVal = document.getElementById('dob').value;
+            if (dobVal) {
+                const birthYear = new Date(dobVal).getFullYear();
+                const currentYear = new Date().getFullYear();
+                if (currentYear - birthYear < 24) {
+                    setError('dob', "Năm sinh không hợp lệ.");
+                    valid = false;
+                }
+            }
+
+            // 5. Bắt buộc tải ảnh (Chỉ áp dụng khi Thêm mới)
+            const fileInput = document.getElementById('avatarFile');
+            const previewImg = document.getElementById('image-preview');
+            const isAddingNew = !editId;
+            
+            if (isAddingNew && !fileInput.files[0]) {
+                document.getElementById('error-avatarFile').classList.remove('hidden');
+                previewImg.classList.add('avatar-error');
+                valid = false;
+            }
+
+            if (!valid) return;
+
+            const saveAction = (imgBase64) => {
+                const existing = editId ? teachers.find(x => x.id === parseInt(editId)) : null;
+                const newData = {
+                    id: editId ? parseInt(editId) : (teachers.length > 0 ? Math.max(...teachers.map(t => t.id)) + 1 : 1),
+                    name: document.getElementById('name').value.trim(),
+                    dob: document.getElementById('dob').value,
+                    address: document.getElementById('address').value.trim(),
+                    gender: document.getElementById('gender').value,
+                    phone: phoneVal,
+                    email: emailVal,
+                    department: document.getElementById('department').value,
+                    education: document.getElementById('education').value,
+                    avatar: imgBase64 || (existing ? existing.avatar : ""),
+                    password: existing ? (existing.password || "123") : "123",
+                    status: "Active"
+                };
+                if (editId) {
+                    const idx = teachers.findIndex(x => x.id === parseInt(editId));
+                    teachers[idx] = newData;
+                } else {
+                    teachers.push(newData);
+                }
+                localStorage.setItem('teachersData', JSON.stringify(teachers));
+                renderTeachers(); closeTeacherModal();
+                Swal.fire('Thành công', editId ? 'Đã cập nhật thông tin' : 'Đã thêm giảng viên mới', 'success');
+            };
+
+            if (fileInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (ev) => saveAction(ev.target.result);
+                reader.readAsDataURL(fileInput.files[0]);
+            } else { 
+                saveAction(""); 
+            }
+        };
+
+        function toggleSubmenu(id, arrowId) {
+            const submenu = document.getElementById(id);
+            const arrow = document.getElementById(arrowId);
+            if (submenu) submenu.classList.toggle('open');
+            if (arrow) arrow.classList.toggle('rotate-180');
+        }
+        document.addEventListener('DOMContentLoaded', initPage);
+    </script>
+</body>
+</html>

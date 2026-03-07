@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edumin - Quản lý Phòng Đào Tạo</title>
+    <script src="../../tailwind.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Poppins', sans-serif; background-color: #f3f4f9; }
+        
+        /* Hiệu ứng mượt cho Submenu */
+        .submenu-container {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-in-out;
+        }
+        .submenu-container.open {
+            max-height: 200px;
+        }
+        .menu-arrow {
+            transition: transform 0.3s ease;
+        }
+        .rotate-180 {
+            transform: rotate(180deg);
+        }
+
+        /* Thêm CSS cho Dropdown Avatar */
+        #user-dropdown {
+            display: none;
+        }
+        #user-dropdown.show {
+            display: block;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+    <header class="w-full bg-white shadow-sm z-50 flex items-center justify-between px-6 py-4 border-b border-gray-200">
+        <div class="flex items-center gap-3 w-64">
+            <div class="bg-indigo-600 p-2 rounded-lg">
+                <i class="fas fa-graduation-cap text-white text-xl"></i>
+            </div>
+            <span class="text-2xl font-bold text-indigo-900 uppercase">EDUMIN</span>
+        </div>
+
+        <div class="flex items-center gap-6">
+            <div class="relative">
+                <i class="far fa-bell text-gray-600 text-xl"></i>
+                <span class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center">15</span>
+            </div>
+            <div class="relative">
+                <div class="flex items-center gap-3 border-l pl-6 border-gray-300 cursor-pointer" onclick="toggleUserDropdown(event)">
+                    <div class="text-right hidden sm:block">
+                        <p id="admin-name" class="text-sm font-bold text-gray-800">Admin Đào Tạo</p>
+                        <p class="text-xs text-gray-500">Đã đăng nhập</p>
+                    </div>
+                    <img id="admin-avatar-display" src="https://ui-avatars.com/api/?name=Admin+User&background=6366f1&color=fff" class="w-10 h-10 rounded-full shadow-sm">
+                </div>
+
+                <div id="user-dropdown" class="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-xl py-2 z-[100]">
+                    <button onclick="openChangePasswordModal()" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 transition">
+                        <i class="fas fa-key mr-2"></i> Đổi mật khẩu
+                    </button>
+                    <button onclick="handleLogout()" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition">
+                        <i class="fas fa-sign-out-alt mr-2"></i> Đăng xuất
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="flex flex-1">
+        <aside class="w-64 bg-white shadow-lg hidden md:block overflow-y-auto border-r border-gray-100">
+            <nav class="mt-8 px-4">
+                <p class="text-xs font-semibold text-gray-400 uppercase px-2 mb-2">Main Menu</p>
+                <ul class="space-y-1">
+                    <li>
+                        <a href="#" class="flex items-center gap-3 p-3 bg-indigo-50 text-indigo-600 rounded-lg">
+                            <i class="fas fa-th-large w-5 text-center"></i> <span>Dashboard</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <button onclick="toggleSubmenu('submenu-gv', 'arrow-gv')" class="w-full flex items-center justify-between p-3 text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg transition-all">
+                            <div class="flex items-center gap-3">
+                                <i class="fas fa-user-tie w-5 text-center"></i> 
+                                <span>Giảng viên</span>
+                            </div>
+                            <i id="arrow-gv" class="fas fa-chevron-down text-[10px] menu-arrow"></i>
+                        </button>
+                        <div id="submenu-gv" class="submenu-container">
+                            <ul class="pl-2 mt-1 space-y-1 border-l-2 border-indigo-100 ml-6">
+                                <li><a href="quanlygv.html" class="block p-2 text-sm text-gray-500 hover:text-indigo-600 transition">Danh sách giảng viên</a></li>
+                                <li><a href="taikhoangv.html" class="block p-2 text-sm text-gray-500 hover:text-indigo-600 transition">Tài khoản giảng viên</a></li>
+                            </ul>
+                        </div>
+                    </li>
+                    <li>
+                        <button onclick="toggleSubmenu('submenu-sv', 'arrow-sv')" class="w-full flex items-center justify-between p-3 text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg transition-all">
+                            <div class="flex items-center gap-3">
+                                <i class="fas fa-user-graduate w-5 text-center"></i> 
+                                <span>Sinh viên</span>
+                            </div>
+                            <i id="arrow-sv" class="fas fa-chevron-down text-[10px] menu-arrow"></i>
+                        </button>
+                        <div id="submenu-sv" class="submenu-container">
+                            <ul class="pl-2 mt-1 space-y-1 border-l-2 border-indigo-100 ml-6">
+                                <li><a href="quanlysv.html" class="block p-2 text-sm text-gray-500 hover:text-indigo-600 transition">Danh sách sinh viên</a></li>
+                                <li><a href="taikhoansv.html" class="block p-2 text-sm text-gray-500 hover:text-indigo-600 transition">Tài khoản sinh viên</a></li>
+                            </ul>
+                        </div>
+                    </li>
+                    <li><a href="quanlykhoa.html" class="flex items-center gap-3 p-3 text-gray-600 hover:bg-gray-50 hover:text-indigo-600 rounded-lg transition-all"><i class="fa-solid fa-graduation-cap w-5 text-center"></i><span>Khoa</span></a></li>
+                    
+                    <li>
+                        <button onclick="toggleSubmenu('submenu-hp', 'arrow-hp')" class="w-full flex items-center justify-between p-3 text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg transition-all">
+                            <div class="flex items-center gap-3">
+                                <i class="fa-solid fa-book-open w-5 text-center"></i> 
+                                <span>Học phần</span>
+                            </div>
+                            <i id="arrow-hp" class="fas fa-chevron-down text-[10px] menu-arrow"></i>
+                        </button>
+                        <div id="submenu-hp" class="submenu-container">
+                            <ul class="pl-2 mt-1 space-y-1 border-l-2 border-indigo-100 ml-6">
+                                <li><a href="quanlyhocphan.html" class="block p-2 text-sm text-gray-500 hover:text-indigo-600 transition">Danh sách học phần</a></li>
+                                <li><a href="dangkyhocphan.html" class="block p-2 text-sm text-gray-500 hover:text-indigo-600 transition">Đăng ký học phần</a></li>
+                            </ul>
+                        </div>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="flex-1 p-4 md:p-8 overflow-y-auto">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-indigo-500 p-6 rounded-2xl text-white shadow-lg shadow-indigo-200 relative overflow-hidden">
+                    <div class="z-10 relative">
+                        <p class="text-sm opacity-80 uppercase font-medium">Tổng Giáo Viên</p>
+                        <h3 class="text-3xl font-bold my-1">450</h3>
+                        <div class="w-full bg-indigo-400 rounded-full h-1.5 mt-4">
+                            <div class="bg-white h-1.5 rounded-full" style="width: 80%"></div>
+                        </div>
+                        <p class="text-xs mt-2 italic">80% Đang hoạt động</p>
+                    </div>
+                    <i class="fas fa-user-tie absolute -right-4 -bottom-4 text-8xl opacity-10"></i>
+                </div>
+                <div class="bg-orange-400 p-6 rounded-2xl text-white shadow-lg shadow-orange-100 relative overflow-hidden">
+                    <div class="z-10 relative">
+                        <p class="text-sm opacity-80 uppercase font-medium">Sinh Viên Mới</p>
+                        <h3 class="text-3xl font-bold my-1">1,245</h3>
+                        <div class="w-full bg-orange-300 rounded-full h-1.5 mt-4">
+                            <div class="bg-white h-1.5 rounded-full" style="width: 50%"></div>
+                        </div>
+                        <p class="text-xs mt-2 italic">50% Tăng trưởng tháng này</p>
+                    </div>
+                    <i class="fas fa-user-graduate absolute -right-4 -bottom-4 text-8xl opacity-10"></i>
+                </div>
+
+                <div class="bg-purple-600 p-6 rounded-2xl text-white shadow-lg shadow-purple-200 relative overflow-hidden">
+                    <div class="z-10 relative">
+                        <p class="text-sm opacity-80 uppercase font-medium">Lớp học hoạt động</p>
+                        <h3 class="text-3xl font-bold my-1">86</h3>
+                        <div class="w-full bg-purple-500 rounded-full h-1.5 mt-4">
+                            <div class="bg-white h-1.5 rounded-full" style="width: 76%"></div>
+                        </div>
+                        <p class="text-xs mt-2 italic">Dựa trên báo cáo thống kê</p>
+                    </div>
+                    <i class="fas fa-school absolute -right-4 -bottom-4 text-8xl opacity-10"></i>
+                </div>
+
+                <div class="bg-red-500 p-6 rounded-2xl text-white shadow-lg shadow-red-200 relative overflow-hidden">
+                    <div class="z-10 relative">
+                        <p class="text-sm opacity-80 uppercase font-medium">Doanh thu học phí</p>
+                        <h3 class="text-3xl font-bold my-1">950.5M</h3>
+                        <div class="w-full bg-red-400 rounded-full h-1.5 mt-4">
+                            <div class="bg-white h-1.5 rounded-full" style="width: 30%"></div>
+                        </div>
+                        <p class="text-xs mt-2 italic">30% Mục tiêu quý này</p>
+                    </div>
+                    <i class="fas fa-dollar-sign absolute -right-4 -bottom-4 text-8xl opacity-10"></i>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-1 bg-white p-6 rounded-2xl shadow-sm">
+                    <div class="flex justify-between items-center mb-6">
+                        <h4 class="font-bold text-gray-700">Thống kê Sinh viên</h4>
+                        <i class="fas fa-ellipsis-h text-gray-300"></i>
+                    </div>
+                    <div class="h-64 flex items-end justify-around gap-2">
+                        <div class="w-4 bg-indigo-500 rounded-t-sm h-[60%]"></div>
+                        <div class="w-4 bg-indigo-100 rounded-t-sm h-[40%]"></div>
+                        <div class="w-4 bg-indigo-500 rounded-t-sm h-[75%]"></div>
+                        <div class="w-4 bg-indigo-100 rounded-t-sm h-[20%]"></div>
+                        <div class="w-4 bg-indigo-500 rounded-t-sm h-[90%]"></div>
+                        <div class="w-4 bg-indigo-100 rounded-t-sm h-[55%]"></div>
+                        <div class="w-4 bg-indigo-500 rounded-t-sm h-[70%]"></div>
+                    </div>
+                    <div class="flex justify-around mt-4 text-[10px] text-gray-400 font-bold uppercase">
+                        <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl shadow-sm text-center">
+                    <h4 class="font-bold text-gray-700 mb-6 text-left">Trạng thái học phí</h4>
+                    <div class="relative inline-block">
+                        <div class="w-48 h-48 rounded-full border-[15px] border-indigo-600 border-t-transparent border-r-indigo-100 flex items-center justify-center rotate-45">
+                            <div class="rotate-[-45deg] text-center">
+                                <p class="text-xs text-gray-500">Đã thanh toán</p>
+                                <p class="text-2xl font-bold text-gray-800">85%</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-6 flex justify-center gap-4 text-xs">
+                        <span class="flex items-center gap-1"><span class="w-3 h-3 bg-indigo-600 rounded-full"></span> Xong</span>
+                        <span class="flex items-center gap-1"><span class="w-3 h-3 bg-indigo-100 rounded-full"></span> Nợ</span>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl shadow-sm">
+                    <h4 class="font-bold text-gray-700 mb-6">Hiệu quả Khuyến mãi</h4>
+                    <div class="h-48 relative overflow-hidden flex items-end">
+                        <svg class="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                            <path d="M0,100 L0,70 C20,40 40,80 60,30 C80,10 100,40 100,40 L100,100 Z" fill="#ebf4ff"></path>
+                            <path d="M0,70 C20,40 40,80 60,30 C80,10 100,40 100,40" stroke="#6366f1" stroke-width="2" fill="none"></path>
+                        </svg>
+                    </div>
+                    <p class="text-xs text-center text-gray-400 mt-4">Theo dõi các đợt ưu đãi khóa học</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="changePasswordModal" class="fixed inset-0 bg-black bg-opacity-50 z-[200] hidden flex items-center justify-center">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+            <div class="bg-indigo-600 p-4 text-white flex justify-between items-center">
+                <h3 class="font-bold">Đổi mật khẩu</h3>
+                <button onclick="closeChangePasswordModal()" class="text-white hover:text-gray-200">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Mật khẩu cũ</label>
+                    <input type="password" id="oldPassword" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="Nhập mật khẩu cũ">
+                    <p id="error-oldPassword" class="text-red-500 text-xs mt-1 hidden"></p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Mật khẩu mới</label>
+                    <input type="password" id="newPassword" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="Tối thiểu 6 ký tự">
+                    <p id="error-newPassword" class="text-red-500 text-xs mt-1 hidden"></p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Xác nhận mật khẩu</label>
+                    <input type="password" id="confirmPassword" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="Nhập lại mật khẩu mới">
+                    <p id="error-confirmPassword" class="text-red-500 text-xs mt-1 hidden"></p>
+                </div>
+                <div class="flex gap-3 pt-2">
+                    <button onclick="closeChangePasswordModal()" class="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium">Hủy</button>
+                    <button onclick="submitChangePassword()" class="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium">Cập nhật</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 1. Hàm đóng/mở submenu (Cũ)
+        function toggleSubmenu(menuId, arrowId) {
+            const menu = document.getElementById(menuId);
+            const arrow = document.getElementById(arrowId);
+            menu.classList.toggle('open');
+            arrow.classList.toggle('rotate-180');
+        }
+
+        // 2. Chức năng Dropdown Avatar
+        function toggleUserDropdown(event) {
+            event.stopPropagation();
+            document.getElementById('user-dropdown').classList.toggle('show');
+        }
+
+        // Đóng dropdown khi click ra ngoài
+        window.onclick = function(event) {
+            if (!event.target.closest('.relative')) {
+                document.getElementById('user-dropdown').classList.remove('show');
+            }
+        }
+
+        // 3. Modal Đổi Mật Khẩu
+        function openChangePasswordModal() {
+            document.getElementById('changePasswordModal').classList.remove('hidden');
+            document.getElementById('user-dropdown').classList.remove('show');
+        }
+
+        function closeChangePasswordModal() {
+            document.getElementById('changePasswordModal').classList.add('hidden');
+            resetPasswordForm();
+        }
+
+        function resetPasswordForm() {
+            ['oldPassword', 'newPassword', 'confirmPassword'].forEach(id => {
+                const input = document.getElementById(id);
+                input.value = '';
+                input.classList.remove('border-red-500');
+                document.getElementById(`error-${id}`).classList.add('hidden');
+            });
+        }
+
+        function showError(id, message) {
+            const input = document.getElementById(id);
+            const errorText = document.getElementById(`error-${id}`);
+            input.classList.add('border-red-500');
+            errorText.innerText = message;
+            errorText.classList.remove('hidden');
+        }
+
+        function submitChangePassword() {
+            // Reset lỗi trước khi check
+            resetPasswordForm();
+
+            const oldPass = document.getElementById('oldPassword').value;
+            const newPass = document.getElementById('newPassword').value;
+            const confirmPass = document.getElementById('confirmPassword').value;
+            const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+            
+            let hasError = false;
+
+            // 1. Kiểm tra bỏ trống
+            if (!oldPass) { showError('oldPassword', 'Vui lòng nhập mật khẩu cũ'); hasError = true; }
+            if (!newPass) { showError('newPassword', 'Vui lòng nhập mật khẩu mới'); hasError = true; }
+            if (!confirmPass) { showError('confirmPassword', 'Vui lòng xác nhận mật khẩu'); hasError = true; }
+
+            if (hasError) return;
+
+            // 2. Kiểm tra mật khẩu cũ (Giả định mật khẩu lưu trong currentUser)
+            if (oldPass !== currentUser.password) {
+                showError('oldPassword', 'Mật khẩu cũ không đúng');
+                hasError = true;
+            }
+
+            // 3. Kiểm tra độ dài mật khẩu mới
+            if (newPass.length < 6) {
+                showError('newPassword', 'Mật khẩu phải ít nhất 6 ký tự trở lên');
+                hasError = true;
+            }
+
+            // 4. Kiểm tra xác nhận mật khẩu
+            if (newPass !== confirmPass) {
+                showError('confirmPassword', 'Mật khẩu xác nhận không giống mật khẩu mới');
+                hasError = true;
+            }
+
+            if (hasError) return;
+
+            // Nếu mọi thứ OK -> Cập nhật (Ở đây chỉ làm demo thành công)
+            currentUser.password = newPass;
+            sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+            alert("Đổi mật khẩu thành công!");
+            closeChangePasswordModal();
+        }
+
+        // 4. Logic Hiển thị Tên Admin và Kiểm tra Quyền (Cũ)
+        document.addEventListener("DOMContentLoaded", function() {
+            const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+
+            if (!currentUser || currentUser.role !== 'dao-tao') {
+                alert("Phiên đăng nhập hết hạn hoặc bạn không có quyền!");
+                window.location.href = "../../loginform/login.html";
+                return;
+            }
+
+            const nameDisplay = document.getElementById('admin-name');
+            if (nameDisplay && currentUser.hoTen) {
+                nameDisplay.innerText = currentUser.hoTen;
+            }
+
+            const avatarDisplay = document.getElementById('admin-avatar-display');
+            if (avatarDisplay && currentUser.hoTen) {
+                const encodedName = encodeURIComponent(currentUser.hoTen);
+                avatarDisplay.src = `https://ui-avatars.com/api/?name=${encodedName}&background=6366f1&color=fff`;
+            }
+        });
+
+        // 5. Hàm đăng xuất (Cập nhật)
+        function handleLogout() {
+            sessionStorage.removeItem('currentUser');
+            window.location.href = "../../loginform/login.html";
+        }
+    </script>
+</body>
+</html>
