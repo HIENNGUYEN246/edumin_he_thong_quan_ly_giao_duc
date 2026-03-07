@@ -325,11 +325,7 @@
 
         const initData = () => {
             if (!localStorage.getItem('studentsData')) {
-                const sampleData = [
-                    { id: 1, name: "Nguyễn Văn An", email: "annguyen@student.edu.vn", password: "123", status: "Active", lockReason: "" },
-                    { id: 2, name: "Nguyễn Hữu Thắng", email: "huuthang@student.edu.vn", password: "2026", status: "Locked", lockReason: "Vi phạm nội quy" }
-                ];
-                localStorage.setItem('studentsData', JSON.stringify(sampleData));
+                localStorage.setItem('studentsData', JSON.stringify([]));
             }
         };
 
