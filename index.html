@@ -65,21 +65,6 @@
                 ];
                 localStorage.setItem('users', JSON.stringify(initialUsers));
             }
-            
-            if (!localStorage.getItem('studentsData')) {
-                const initialStudents = [
-                    { id: 101, email: 'vanhoc123@student.edu.vn', password: '123', hoTen: 'Lê Văn Học', status: 'Active', education: 'Đại học' },
-                    { id: 102, email: 'thithu123@edu.vn', password: '123', hoTen: 'Trần Thị Thu', status: 'Locked', education: 'Đại học' }
-                ];
-                localStorage.setItem('studentsData', JSON.stringify(initialStudents));
-            }
-
-            if (!localStorage.getItem('teachersData')) {
-                const initialTeachers = [
-                    { id: 201, email: 'gv1@edu.vn', password: '123', hoTen: 'Giảng viên A', status: 'Active', department: 'CNTT' }
-                ];
-                localStorage.setItem('teachersData', JSON.stringify(initialTeachers));
-            }
         };
         initAccounts();
 
